@@ -11,7 +11,7 @@ import { indexById, useLibrary } from "@/lib/library";
 import { WORKOUT_PRESETS, useSchedule, useWorkouts } from "@/lib/workouts";
 import type { LibraryExercise } from "@/types";
 
-export default function PlanEditor() {
+export default function PlanEditor({ onBack }: { onBack: () => void }) {
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
   const {
@@ -26,6 +26,13 @@ export default function PlanEditor() {
     moveItem,
   } = useWorkouts();
   const { defaults, setWeekdayDefault } = useSchedule();
+
+  /** Weekday defaults predate multi-session days, so normalise the old shape. */
+  const usualFor = (dow: number): string[] => {
+    const v = defaults.byWeekday?.[dow];
+    if (Array.isArray(v)) return v;
+    return v ? [v] : [];
+  };
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -54,9 +61,12 @@ export default function PlanEditor() {
     <div className="flex w-full max-w-app flex-col">
       <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-display text-[15px] font-black tracking-[.14em]">
-            PLAN<span className="text-accent-text">·</span>EDITOR
-          </div>
+          <button
+            onClick={onBack}
+            className="press -ml-1 flex items-center gap-1.5 rounded-field px-1.5 py-1 text-[13px] font-semibold text-muted"
+          >
+            ‹ Today
+          </button>
           <ThemeToggle />
         </div>
         <h1 className="mt-3 font-display text-[clamp(24px,7vw,30px)] font-black uppercase leading-[.95] tracking-tight">
@@ -275,19 +285,36 @@ export default function PlanEditor() {
                   <span className="w-10 flex-none font-display text-[11px] font-bold tracking-[.1em] text-muted">
                     {d.label}
                   </span>
-                  <select
-                    value={defaults.byWeekday?.[i] ?? ""}
-                    onChange={(e) => setWeekdayDefault(i, e.target.value || null)}
-                    aria-label={`Usual session for ${d.full}`}
-                    className="min-w-0 flex-1 rounded-field bg-raised px-3 py-2 text-[13.5px] font-semibold outline-none"
-                  >
-                    <option value="">Rest</option>
-                    {ordered.map((w) => (
-                      <option key={w.id} value={w.id}>
-                        {w.name}
-                      </option>
-                    ))}
-                  </select>
+                  {/* Toggles, not a dropdown — a weekday can hold more than one session. */}
+                  <div className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                    {ordered.map((w) => {
+                      const on = usualFor(i).includes(w.id);
+                      return (
+                        <button
+                          key={w.id}
+                          onClick={() =>
+                            setWeekdayDefault(
+                              i,
+                              on
+                                ? usualFor(i).filter((x) => x !== w.id)
+                                : [...usualFor(i), w.id]
+                            )
+                          }
+                          aria-pressed={on}
+                          className={`press flex-none rounded-full px-3 py-1.5 text-[12.5px] font-semibold ${
+                            on ? "bg-accent text-on-accent" : "bg-raised text-muted"
+                          }`}
+                        >
+                          {w.name}
+                        </button>
+                      );
+                    })}
+                    {usualFor(i).length === 0 && (
+                      <span className="flex-none self-center px-1 text-[12px] text-muted">
+                        rest
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -299,6 +326,7 @@ export default function PlanEditor() {
         open={pickerOpen}
         onClose={() => setPickerOpen(false)}
         onAdd={(id) => workout && addExercise(workout.id, id)}
+        onRemove={(id) => workout && removeExercise(workout.id, id)}
         existingIds={new Set(workout?.items.map((i) => i.exerciseId) ?? [])}
         dayLabel={workout?.name ?? ""}
       />

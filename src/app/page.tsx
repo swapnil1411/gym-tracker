@@ -28,8 +28,8 @@ export default function Home() {
     <div className="relative flex w-full max-w-app flex-col overflow-x-hidden">
       {/* pb-24 keeps the last card clear of the fixed bottom nav */}
       <main className="flex min-h-dvh flex-col pb-24">
-        {tab === "today" && <DailyTracker />}
-        {tab === "plan" && <PlanEditor />}
+        {tab === "today" && <DailyTracker onOpenPlan={() => setTab("plan")} />}
+        {tab === "plan" && <PlanEditor onBack={() => setTab("today")} />}
         {tab === "stats" && <Dashboard />}
       </main>
       <BottomNav active={tab} onChange={setTab} />

@@ -41,8 +41,10 @@ export default function Dashboard() {
   /** Planned exercise count for a date, via whatever workout it points at. */
   const totalFor = useCallback(
     (key: string) => {
-      const id = resolve(key).workoutId;
-      return id ? workouts[id]?.items.length ?? 0 : 0;
+      return resolve(key).workoutIds.reduce(
+        (n, id) => n + (workouts[id]?.items.length ?? 0),
+        0
+      );
     },
     [resolve, workouts]
   );
@@ -50,8 +52,10 @@ export default function Dashboard() {
   /** Session name for a date, for labelling rows. */
   const nameFor = useCallback(
     (key: string) => {
-      const id = resolve(key).workoutId;
-      return id ? workouts[id]?.name ?? null : null;
+      const names = resolve(key)
+        .workoutIds.map((id) => workouts[id]?.name)
+        .filter(Boolean);
+      return names.length ? names.join(" + ") : null;
     },
     [resolve, workouts]
   );

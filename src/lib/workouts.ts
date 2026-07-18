@@ -51,6 +51,16 @@ function uniqueId(base: string, taken: Set<string>): string {
   }
 }
 
+/**
+ * Normalises every shape the schedule has ever been written in — a bare id, a
+ * null, or a list — into a list. Documents written before multi-session days
+ * still deserialise correctly, so no backfill is needed.
+ */
+function toIds(v: string[] | string | null | undefined): string[] {
+  if (Array.isArray(v)) return v.filter(Boolean);
+  return v ? [v] : [];
+}
+
 /* ------------------------------- workouts -------------------------------- */
 
 export function useWorkouts() {
@@ -235,22 +245,34 @@ export function useSchedule() {
   }, [user]);
 
   const resolve = useCallback(
-    (key: string): { workoutId: string | null; isOverride: boolean } => {
+    (key: string): { workoutIds: string[]; isOverride: boolean } => {
       const explicit = byDate[key];
-      if (explicit) return { workoutId: explicit.workoutId, isOverride: true };
+      if (explicit) return { workoutIds: toIds(explicit.workoutIds ?? explicit.workoutId), isOverride: true };
       const dow = toMondayIndex(parseDateKey(key).getDay());
-      return { workoutId: defaults.byWeekday?.[dow] ?? null, isOverride: false };
+      return { workoutIds: toIds(defaults.byWeekday?.[dow]), isOverride: false };
     },
     [byDate, defaults]
   );
 
-  /** Point a single date at a workout. null = rest day. */
+  /** Point a date at a set of workouts. An empty list is a rest day. */
   const assign = useCallback(
-    async (key: string, workoutId: string | null) => {
+    async (key: string, workoutIds: string[]) => {
       if (!user) return;
-      await setDoc(doc(getDb(), "users", user.uid, "schedule", key), { workoutId });
+      await setDoc(doc(getDb(), "users", user.uid, "schedule", key), { workoutIds });
     },
     [user]
+  );
+
+  /** Add or remove one session from a date, keeping the others. */
+  const toggleWorkout = useCallback(
+    async (key: string, id: string) => {
+      const current = resolve(key).workoutIds;
+      const next = current.includes(id)
+        ? current.filter((x) => x !== id)
+        : [...current, id];
+      await assign(key, next);
+    },
+    [resolve, assign]
   );
 
   /** Drop the override so the date falls back to its weekday default. */
@@ -263,11 +285,11 @@ export function useSchedule() {
   );
 
   const setWeekdayDefault = useCallback(
-    async (dow: number, workoutId: string | null) => {
+    async (dow: number, workoutIds: string[]) => {
       if (!user) return;
       await setDoc(
         doc(getDb(), "users", user.uid, "settings", "schedule"),
-        { byWeekday: { [dow]: workoutId } },
+        { byWeekday: { [dow]: workoutIds } },
         { merge: true }
       );
     },
@@ -280,6 +302,7 @@ export function useSchedule() {
     loading,
     resolve,
     assign,
+    toggleWorkout,
     clearAssignment,
     setWeekdayDefault,
   };
@@ -315,7 +338,7 @@ export function useLegacyPlanMigration(enabled: boolean) {
       ]);
       if (!existingWorkouts.empty || planSnap.empty) return;
 
-      const byWeekday: Record<number, string | null> = {};
+      const byWeekday: Record<number, string[]> = {};
       const idByName = new Map<string, string>();
       const taken = new Set<string>();
 
@@ -330,7 +353,7 @@ export function useLegacyPlanMigration(enabled: boolean) {
         // A rest day, or an empty unnamed day, becomes an empty default slot
         // rather than a workout nobody asked for.
         if (data.isRestDay || (!label && items.length === 0)) {
-          byWeekday[dow] = null;
+          byWeekday[dow] = [];
           continue;
         }
 
@@ -352,7 +375,7 @@ export function useLegacyPlanMigration(enabled: boolean) {
             createdAt: new Date().toISOString(),
           });
         }
-        byWeekday[dow] = id;
+        byWeekday[dow] = [id];
       }
 
       await setDoc(settingsRef, { byWeekday, migratedAt: new Date().toISOString() }, { merge: true });

@@ -13,8 +13,23 @@ export interface ExerciseHistory {
   lastReps: number;
   lastSets: number;
   lastOn: string | null;
+  /**
+   * Most recent logged date *including* today. lastOn deliberately excludes
+   * today; this one doesn't, because deciding whether a log should advance the
+   * plan needs to know if anything newer already exists.
+   */
+  latestOn: string | null;
   /** How many separate days this exercise has been logged. */
   sessions: number;
+  /** Every logged session, oldest first — the series behind the chart. */
+  points: SessionPoint[];
+}
+
+export interface SessionPoint {
+  on: string;
+  kg: number;
+  sets: number;
+  reps: number;
 }
 
 const empty = (): ExerciseHistory => ({
@@ -24,7 +39,9 @@ const empty = (): ExerciseHistory => ({
   lastReps: 0,
   lastSets: 0,
   lastOn: null,
+  latestOn: null,
   sessions: 0,
+  points: [],
 });
 
 /**
@@ -73,7 +90,14 @@ export function useExerciseHistory(windowDays = 365) {
           h.lastSets = entry.setsDone ?? 0;
           h.lastOn = key;
         }
+        h.latestOn = key;
         h.sessions += 1;
+        h.points.push({
+          on: key,
+          kg,
+          sets: entry.setsDone ?? 0,
+          reps: entry.repsDone ?? 0,
+        });
         map.set(exId, h);
       }
     }
@@ -90,6 +114,17 @@ export function formatDayLabel(key: string): string {
     day: "numeric",
     month: "short",
   });
+}
+
+/**
+ * Change in working weight between the last two logged sessions.
+ * null when there is nothing to compare against yet.
+ */
+export function weightDelta(h: ExerciseHistory | undefined): number | null {
+  if (!h || h.points.length < 2) return null;
+  const last = h.points[h.points.length - 1];
+  const prev = h.points[h.points.length - 2];
+  return last.kg - prev.kg;
 }
 
 export function formatKg(kg: number): string {

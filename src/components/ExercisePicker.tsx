@@ -12,12 +12,15 @@ export default function ExercisePicker({
   open,
   onClose,
   onAdd,
+  onRemove,
   existingIds,
   dayLabel,
 }: {
   open: boolean;
   onClose: () => void;
   onAdd: (exerciseId: string) => void;
+  /** Added is a toggle, not a dead end — tapping it again takes it back out. */
+  onRemove: (exerciseId: string) => void;
   existingIds: Set<string>;
   dayLabel: string;
 }) {
@@ -144,12 +147,13 @@ export default function ExercisePicker({
                   </div>
                 </div>
                 <button
-                  onClick={() => !added && onAdd(ex.id)}
-                  disabled={added}
+                  onClick={() => (added ? onRemove(ex.id) : onAdd(ex.id))}
+                  aria-pressed={added}
+                  aria-label={`${added ? "Remove" : "Add"} ${ex.name}`}
                   className={
                     added
-                      ? "flex-none rounded-field border border-done/40 bg-done/10 px-3.5 py-2 text-[13px] font-bold text-done-text"
-                      : "flex-none rounded-field bg-accent px-3.5 py-2 text-[13px] font-bold text-on-accent shadow-lift-strong press active:shadow-none"
+                      ? "press flex-none rounded-field border border-done/40 bg-done/10 px-3.5 py-2 text-[13px] font-bold text-done-text"
+                      : "press flex-none rounded-field bg-accent px-3.5 py-2 text-[13px] font-bold text-on-accent shadow-lift-strong active:shadow-none"
                   }
                 >
                   {added ? "✓ Added" : "Add"}

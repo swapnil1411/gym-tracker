@@ -17,7 +17,7 @@ import { useExerciseHistory, formatKg, formatDayLabel } from "@/lib/history";
 import { useAuth } from "@/lib/auth-context";
 import type { LibraryExercise } from "@/types";
 
-export default function DailyTracker() {
+export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void }) {
   const { logOut } = useAuth();
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
@@ -31,8 +31,15 @@ export default function DailyTracker() {
     addExercise,
     removeExercise,
     updateItem,
+    moveItem,
   } = useWorkouts();
-  const { resolve, assign, clearAssignment, loading: schedLoading } = useSchedule();
+  const {
+    resolve,
+    assign,
+    toggleWorkout,
+    clearAssignment,
+    loading: schedLoading,
+  } = useSchedule();
   const { history } = useExerciseHistory();
 
   // Import the old plan/{weekday} docs once, but only after the workouts
@@ -43,8 +50,8 @@ export default function DailyTracker() {
   const todayIdx = toMondayIndex(new Date().getDay());
   const [selected, setSelected] = useState(todayIdx);
   const [editing, setEditing] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [logId, setLogId] = useState<string | null>(null);
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const [logTarget, setLogTarget] = useState<{ w: string; ex: string } | null>(null);
   const [detail, setDetail] = useState<LibraryExercise | null>(null);
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -60,33 +67,41 @@ export default function DailyTracker() {
   const key = dateKey(selectedDate);
   const { entries, toggle, setCompletion } = useDayCompletions(key);
 
-  const { workoutId, isOverride } = resolve(key);
+  const { workoutIds, isOverride } = resolve(key);
   // A workout can be deleted while dates still point at it.
-  const workout = workoutId ? workouts[workoutId] ?? null : null;
-  const items = workout?.items ?? [];
+  const sessions = workoutIds.map((id) => workouts[id]).filter(Boolean);
+  const allItems = sessions.flatMap((w) => w.items);
 
-  const doneCount = items.filter((i) => entries[i.exerciseId]?.done).length;
+  const doneCount = allItems.filter((i) => entries[i.exerciseId]?.done).length;
   const isFuture = selectedDate > new Date() && key !== dateKey(new Date());
 
+  // Renaming inline only makes sense when there's exactly one session to rename.
+  const soleSession = sessions.length === 1 ? sessions[0] : null;
+
   useEffect(() => {
-    setNameDraft(workout?.name ?? "");
+    setNameDraft(soleSession?.name ?? "");
     setNameEditing(false);
-  }, [workout?.id, workout?.name]);
+  }, [soleSession?.id, soleSession?.name]);
 
   const commitName = () => {
     const next = nameDraft.trim();
-    if (workout && next && next !== workout.name) rename(workout.id, next);
-    else setNameDraft(workout?.name ?? "");
+    if (soleSession && next && next !== soleSession.name) rename(soleSession.id, next);
+    else setNameDraft(soleSession?.name ?? "");
     setNameEditing(false);
   };
 
-  const logItem = logId ? items.find((i) => i.exerciseId === logId) ?? null : null;
+  const logWorkout = logTarget ? workouts[logTarget.w] : undefined;
+  const logItem = logTarget
+    ? logWorkout?.items.find((i) => i.exerciseId === logTarget.ex) ?? null
+    : null;
 
-  /** Create a workout and point today at it in one step. */
-  const createAndAssign = async (name: string) => {
+  /** Create a session and put it on this day in one step. */
+  const createAndAdd = async (name: string) => {
     const id = await create(name);
-    if (id) await assign(key, id);
+    if (id) await assign(key, [...workoutIds, id]);
   };
+
+  const title = sessions.length ? sessions.map((w) => w.name).join(" + ") : "Rest";
 
   return (
     <div className="flex w-full max-w-app flex-col">
@@ -99,25 +114,29 @@ export default function DailyTracker() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <button
+              onClick={onOpenPlan}
+              aria-label="Sessions and weekly rhythm"
+              title="Sessions & week"
+              className="press flex h-10 w-10 items-center justify-center rounded-field bg-surface text-[15px] text-muted"
+            >
+              🗓
+            </button>
+            <button
               onClick={logOut}
               aria-label="Log out"
               title="Log out"
-              className="flex h-10 w-10 items-center justify-center rounded-field bg-surface text-muted press"
+              className="press flex h-10 w-10 items-center justify-center rounded-field bg-surface text-muted"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
               </svg>
             </button>
-            <ProgressRing done={doneCount} total={items.length} size={58} />
+            <ProgressRing done={doneCount} total={allItems.length} size={58} />
           </div>
         </div>
 
         <div className="mt-3">
-          {/*
-            The session name is the headline now, not the weekday — the workout
-            is what you actually came here to do. The date is the subtitle.
-          */}
-          {nameEditing && workout ? (
+          {nameEditing && soleSession ? (
             <input
               autoFocus
               value={nameDraft}
@@ -126,7 +145,7 @@ export default function DailyTracker() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") (e.target as HTMLInputElement).blur();
                 if (e.key === "Escape") {
-                  setNameDraft(workout.name);
+                  setNameDraft(soleSession.name);
                   setNameEditing(false);
                 }
               }}
@@ -135,20 +154,20 @@ export default function DailyTracker() {
             />
           ) : (
             <button
-              onClick={() => workout && setNameEditing(true)}
-              disabled={!workout}
+              onClick={() => soleSession && setNameEditing(true)}
+              disabled={!soleSession}
               className="group flex items-center gap-2 text-left"
-              aria-label={workout ? `Rename ${workout.name}` : undefined}
+              aria-label={soleSession ? `Rename ${soleSession.name}` : undefined}
             >
               <span
-                // Re-keyed so the name crossfades when the session changes
-                // instead of swapping between frames.
-                key={workout?.id ?? "__rest"}
-                className="rise-in font-display text-[clamp(26px,8vw,34px)] font-black uppercase leading-[.95] tracking-tight"
+                // Re-keyed so the name crossfades when the day changes rather
+                // than swapping between frames.
+                key={title}
+                className="rise-in font-display text-[clamp(24px,7.5vw,32px)] font-black uppercase leading-[.95] tracking-tight"
               >
-                {workout ? workout.name : "Rest"}
+                {title}
               </span>
-              {workout && (
+              {soleSession && (
                 <svg
                   width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"
@@ -169,16 +188,17 @@ export default function DailyTracker() {
                 {selectedDate.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
               </>
             )}
-            {isOverride && workout && <span className="ml-1.5">· just this day</span>}
+            {isOverride && <span className="ml-1.5">· just this day</span>}
           </div>
         </div>
 
         <WorkoutSlider
           workouts={ordered}
-          activeId={workoutId}
+          selectedIds={workoutIds}
           isOverride={isOverride}
-          onPick={(id) => assign(key, id)}
-          onCreate={createAndAssign}
+          onToggle={(id) => toggleWorkout(key, id)}
+          onClear={() => assign(key, [])}
+          onCreate={createAndAdd}
           onResetToUsual={() => clearAssignment(key)}
         />
       </header>
@@ -188,9 +208,9 @@ export default function DailyTracker() {
         {DAYS.map((d, i) => {
           const dd = new Date();
           dd.setDate(dd.getDate() + (i - todayIdx));
-          const dKey = dateKey(dd);
-          const resolved = resolve(dKey).workoutId;
-          const label = resolved ? workouts[resolved]?.name ?? "—" : "rest";
+          const ids = resolve(dateKey(dd)).workoutIds;
+          const names = ids.map((id) => workouts[id]?.name).filter(Boolean);
+          const label = names.length ? names.join(" + ") : "rest";
           const active = i === selected;
           return (
             <button
@@ -220,7 +240,7 @@ export default function DailyTracker() {
         })}
       </div>
 
-      {workout && (
+      {sessions.length > 0 && (
         <div className="flex gap-2 px-4 sm:px-5">
           <button
             onClick={() => setEditing((v) => !v)}
@@ -239,7 +259,7 @@ export default function DailyTracker() {
           <p className="py-10 text-center text-sm text-muted">Loading your sessions…</p>
         )}
 
-        {!loading && !schedLoading && !workout && (
+        {!loading && !schedLoading && sessions.length === 0 && (
           <div className="px-5 py-10 text-center text-sm leading-relaxed text-muted">
             {ordered.length === 0 ? (
               <>
@@ -252,209 +272,248 @@ export default function DailyTracker() {
               <>
                 {DAYS[selected].full} is a rest day.
                 <br />
-                Pick a session above if you want to train anyway.
+                Tap a session above to train anyway.
               </>
             )}
           </div>
         )}
 
-        {workout && items.length === 0 && (
-          <div className="px-5 py-10 text-center text-sm leading-relaxed text-muted">
-            No exercises in <b className="text-text">{workout.name}</b> yet.
-            <br />
-            Add them once and they&apos;ll be here every time you do this session.
-          </div>
-        )}
-
-        {items.map((item, i) => {
-          const ex = byId.get(item.exerciseId);
-          const group = ex?.group ?? "core";
-          const g = GROUPS[group];
-          const isDone = Boolean(entries[item.exerciseId]?.done);
-          const h = history.get(item.exerciseId);
-
-          return (
-            <div
-              key={item.exerciseId}
-              // Stagger capped at 6 slots: past that the delay stops reading as
-              // choreography and starts reading as lag.
-              style={{ animationDelay: `${Math.min(i, 6) * 38}ms` }}
-              // Tapping the card body opens the log screen; the checkbox stays a
-              // one-tap shortcut for "did it exactly as planned".
-              onClick={() => !editing && setLogId(item.exerciseId)}
-              role={editing ? undefined : "button"}
-              tabIndex={editing ? undefined : 0}
-              onKeyDown={(e) => {
-                if (editing) return;
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setLogId(item.exerciseId);
-                }
-              }}
-              className={`rise-in relative flex items-center gap-3 overflow-hidden rounded-card p-3 ${
-                isDone ? "bg-card-done/80 backdrop-blur-xl" : "glass"
-              } ${editing ? "pr-12" : "cursor-pointer press press-card"}`}
-            >
-              <div
-                className={isDone ? "opacity-70 grayscale-[.5]" : ""}
-                // The whole card opens the log sheet; the thumbnail is a
-                // separate target for "show me how this is done".
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Thumb
-                  src={ex?.image ?? null}
-                  group={group}
-                  alt=""
-                  onPress={ex ? () => setDetail(ex) : undefined}
-                  pressLabel={ex ? `See how to do ${ex.name}` : undefined}
-                />
+        {sessions.map((w) => (
+          <div key={w.id} className="flex flex-col gap-2.5">
+            {/* Only label the groups when there's more than one session in play. */}
+            {sessions.length > 1 && (
+              <div className="mt-1 flex items-baseline justify-between px-1">
+                <span className="font-display text-[12px] font-bold uppercase tracking-[.1em]">
+                  {w.name}
+                </span>
+                <span className="text-[11px] text-muted">
+                  {w.items.filter((i) => entries[i.exerciseId]?.done).length}/{w.items.length}
+                </span>
               </div>
+            )}
 
-              <div className="min-w-0 flex-1">
+            {w.items.map((item, i) => {
+              const ex = byId.get(item.exerciseId);
+              const group = ex?.group ?? "core";
+              const g = GROUPS[group];
+              const entry = entries[item.exerciseId];
+              const isDone = Boolean(entry?.done);
+              const h = history.get(item.exerciseId);
+
+              /*
+               * Once a day is logged, show what was actually lifted that day —
+               * not the session's current numbers. The template is a
+               * prescription for next time and moves as you progress; the
+               * completion is a record of one date and must never appear to
+               * change after the fact.
+               */
+              const shownSets = isDone ? entry?.setsDone ?? item.sets : item.sets;
+              const shownReps = isDone ? entry?.repsDone ?? item.reps : item.reps;
+              const shownKg = isDone ? entry?.weightKg ?? item.weightKg : item.weightKg;
+
+              return (
                 <div
-                  className={`truncate text-[15.5px] font-bold tracking-[-.01em] transition ${
-                    isDone ? "text-muted line-through decoration-done" : ""
-                  }`}
+                  key={item.exerciseId}
+                  style={{ animationDelay: `${Math.min(i, 6) * 38}ms` }}
+                  onClick={() => !editing && setLogTarget({ w: w.id, ex: item.exerciseId })}
+                  role={editing ? undefined : "button"}
+                  tabIndex={editing ? undefined : 0}
+                  onKeyDown={(e) => {
+                    if (editing) return;
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setLogTarget({ w: w.id, ex: item.exerciseId });
+                    }
+                  }}
+                  className={`rise-in relative flex items-center gap-3 overflow-hidden rounded-card p-3 ${
+                    isDone ? "bg-card-done/80 backdrop-blur-xl" : "glass"
+                  } ${editing ? "" : "cursor-pointer press press-card"}`}
                 >
-                  {ex?.name ?? "Unknown exercise"}
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span
-                    className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-                    style={tagStyle(g)}
+                  <div
+                    className={isDone ? "opacity-70 grayscale-[.5]" : ""}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    {g.name}
-                  </span>
-                  {editing && workout ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <Stepper
-                        label="sets"
-                        value={item.sets}
-                        suffix=" sets"
-                        onChange={(sets) => updateItem(workout.id, item.exerciseId, { sets })}
-                      />
-                      <Stepper
-                        label="reps"
-                        value={item.reps}
-                        suffix=" reps"
-                        max={200}
-                        onChange={(reps) => updateItem(workout.id, item.exerciseId, { reps })}
-                      />
-                      <Stepper
-                        label="weight"
-                        value={item.weightKg}
-                        suffix=" kg"
-                        min={0}
-                        max={500}
-                        step={2.5}
-                        onChange={(weightKg) =>
-                          updateItem(workout.id, item.exerciseId, { weightKg })
-                        }
-                      />
+                    <Thumb
+                      src={ex?.image ?? null}
+                      group={group}
+                      alt=""
+                      onPress={ex ? () => setDetail(ex) : undefined}
+                      pressLabel={ex ? `See how to do ${ex.name}` : undefined}
+                    />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div
+                      className={`truncate text-[15.5px] font-bold tracking-[-.01em] transition ${
+                        isDone ? "text-muted line-through decoration-done" : ""
+                      }`}
+                    >
+                      {ex?.name ?? "Unknown exercise"}
                     </div>
-                  ) : (
-                    <span className="text-[12px] font-medium text-muted">
-                      {item.sets} × {item.reps}
-                      {item.weightKg > 0 && (
-                        <>
-                          {" · "}
-                          <span className="font-semibold text-text">
-                            {formatKg(item.weightKg)}kg
-                          </span>
-                        </>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <span
+                        className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+                        style={tagStyle(g)}
+                      >
+                        {g.name}
+                      </span>
+                      {editing ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Stepper
+                            label="sets"
+                            value={item.sets}
+                            suffix=" sets"
+                            onChange={(sets) => updateItem(w.id, item.exerciseId, { sets })}
+                          />
+                          <Stepper
+                            label="reps"
+                            value={item.reps}
+                            suffix=" reps"
+                            max={200}
+                            onChange={(reps) => updateItem(w.id, item.exerciseId, { reps })}
+                          />
+                          <Stepper
+                            label="weight"
+                            value={item.weightKg}
+                            suffix=" kg"
+                            min={0}
+                            max={500}
+                            step={2.5}
+                            onChange={(weightKg) =>
+                              updateItem(w.id, item.exerciseId, { weightKg })
+                            }
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-[12px] font-medium text-muted">
+                          {shownSets} × {shownReps}
+                          {shownKg > 0 && (
+                            <>
+                              {" · "}
+                              <span className="font-semibold text-text">
+                                {formatKg(shownKg)}kg
+                              </span>
+                            </>
+                          )}
+                        </span>
                       )}
-                    </span>
+                    </div>
+
+                    {/* What you managed last time you did this move. */}
+                    {!editing && h && h.lastOn && h.lastKg > 0 && (
+                      <div className="mt-1 text-[11px] text-muted">
+                        Last time{" "}
+                        <b className="font-semibold text-text">{formatKg(h.lastKg)}kg</b>
+                        {" · "}
+                        {formatDayLabel(h.lastOn)}
+                        {h.bestKg > h.lastKg && <> · best {formatKg(h.bestKg)}kg</>}
+                      </div>
+                    )}
+                  </div>
+
+                  {!editing && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // don't also open the log sheet
+                        if (!isFuture) toggle(item.exerciseId, item);
+                      }}
+                      disabled={isFuture}
+                      aria-pressed={isDone}
+                      aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
+                      className={`press flex h-9 w-9 flex-none items-center justify-center rounded-field border-2 disabled:opacity-30 ${
+                        isDone ? "border-done bg-done" : "border-line bg-transparent"
+                      }`}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`h-4 w-4 ${isDone ? "animate-pop opacity-100" : "opacity-0"}`}
+                        fill="none"
+                        stroke="rgb(var(--on-done))"
+                        strokeWidth={3.4}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 12l6 6L20 5" />
+                      </svg>
+                    </button>
+                  )}
+
+                  {/* Reorder and remove, in a column so nothing overlaps. */}
+                  {editing && (
+                    <div className="flex flex-none flex-col items-center gap-1">
+                      <button
+                        onClick={() => moveItem(w.id, i, i - 1)}
+                        disabled={i === 0}
+                        aria-label="Move up"
+                        className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:text-text disabled:opacity-25"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        onClick={() => moveItem(w.id, i, i + 1)}
+                        disabled={i === w.items.length - 1}
+                        aria-label="Move down"
+                        className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:text-text disabled:opacity-25"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        onClick={() => removeExercise(w.id, item.exerciseId)}
+                        aria-label={`Remove ${ex?.name ?? "exercise"}`}
+                        className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:border-accent hover:text-accent-text"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                 </div>
+              );
+            })}
 
-                {/* What you managed last time you did this move, whenever that was. */}
-                {!editing && h && h.lastOn && h.lastKg > 0 && (
-                  <div className="mt-1 text-[11px] text-muted">
-                    Last time{" "}
-                    <b className="font-semibold text-text">{formatKg(h.lastKg)}kg</b>
-                    {" · "}
-                    {formatDayLabel(h.lastOn)}
-                    {h.bestKg > h.lastKg && <> · best {formatKg(h.bestKg)}kg</>}
-                  </div>
-                )}
-              </div>
-
-              {!editing && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation(); // don't also open the log sheet
-                    if (!isFuture) toggle(item.exerciseId, item);
-                  }}
-                  disabled={isFuture}
-                  aria-pressed={isDone}
-                  aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
-                  className={`flex h-9 w-9 flex-none items-center justify-center rounded-field border-2 press disabled:opacity-30 ${
-                    isDone ? "border-done bg-done" : "border-line bg-transparent"
-                  }`}
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className={`h-4 w-4 ${isDone ? "animate-pop opacity-100" : "opacity-0"}`}
-                    fill="none"
-                    stroke="rgb(var(--on-done))"
-                    strokeWidth={3.4}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4 12l6 6L20 5" />
-                  </svg>
-                </button>
-              )}
-
-              {editing && workout && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeExercise(workout.id, item.exerciseId);
-                  }}
-                  aria-label={`Remove ${ex?.name ?? "exercise"}`}
-                  className="absolute bottom-0 right-0 top-0 w-11 text-lg text-muted transition hover:text-accent-text"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          );
-        })}
-
-        {workout && (
-          <button
-            onClick={() => setPickerOpen(true)}
-            className="mt-1 flex items-center justify-center gap-2 rounded-card border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
-          >
-            <span className="text-lg leading-none">+</span> Add exercise to {workout.name}
-          </button>
-        )}
+            <button
+              onClick={() => setPickerFor(w.id)}
+              className="mt-1 flex items-center justify-center gap-2 rounded-card border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
+            >
+              <span className="text-lg leading-none">+</span> Add exercise to {w.name}
+            </button>
+          </div>
+        ))}
       </div>
 
       <ExercisePicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onAdd={(id) => workout && addExercise(workout.id, id)}
-        existingIds={new Set(items.map((i) => i.exerciseId))}
-        dayLabel={workout?.name ?? ""}
+        open={pickerFor !== null}
+        onClose={() => setPickerFor(null)}
+        onAdd={(id) => pickerFor && addExercise(pickerFor, id)}
+        onRemove={(id) => pickerFor && removeExercise(pickerFor, id)}
+        existingIds={
+          new Set(pickerFor ? workouts[pickerFor]?.items.map((i) => i.exerciseId) ?? [] : [])
+        }
+        dayLabel={pickerFor ? workouts[pickerFor]?.name ?? "" : ""}
       />
 
       <LogSheet
-        open={logId !== null}
-        onClose={() => setLogId(null)}
-        exercise={logId ? byId.get(logId) : undefined}
+        open={logTarget !== null}
+        onClose={() => setLogTarget(null)}
+        exercise={logTarget ? byId.get(logTarget.ex) : undefined}
         item={logItem}
-        history={logId ? history.get(logId) : undefined}
-        isDone={logId ? Boolean(entries[logId]?.done) : false}
+        entry={logTarget ? entries[logTarget.ex] : undefined}
+        history={logTarget ? history.get(logTarget.ex) : undefined}
+        isDone={logTarget ? Boolean(entries[logTarget.ex]?.done) : false}
         onSave={({ sets, reps, weightKg, markDone }) => {
-          if (!logId || !workout) return;
-          // Carry the numbers into the workout so the next time you do this
-          // session — whichever day that lands on — it starts from here…
-          updateItem(workout.id, logId, { sets, reps, weightKg });
-          // …and record what was actually done today.
-          if (markDone || entries[logId]?.done) {
-            setCompletion(logId, { done: true, sets, reps, weightKg });
+          if (!logTarget) return;
+          /*
+           * Only advance the template when this is the newest session for the
+           * exercise. Editing last Monday after training on Friday is a
+           * correction to that day's record — letting it rewrite the plan would
+           * undo Friday's progression.
+           */
+          const latest = history.get(logTarget.ex)?.latestOn;
+          if (!latest || key >= latest) {
+            updateItem(logTarget.w, logTarget.ex, { sets, reps, weightKg });
+          }
+          // …and record what was actually done on this date.
+          if (markDone || entries[logTarget.ex]?.done) {
+            setCompletion(logTarget.ex, { done: true, sets, reps, weightKg });
           }
         }}
       />

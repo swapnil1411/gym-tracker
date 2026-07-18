@@ -4,20 +4,22 @@ import { useEffect, useState } from "react";
 import Sheet from "./Sheet";
 import Thumb from "./Thumb";
 import ExerciseDetail from "./ExerciseDetail";
+import ProgressChart from "./ProgressChart";
 import Stepper from "./Stepper";
 import { GROUPS, tagStyle } from "@/lib/groups";
-import { formatDayLabel, formatKg, type ExerciseHistory } from "@/lib/history";
-import type { LibraryExercise, PlanItem } from "@/types";
+import { formatKg, type ExerciseHistory } from "@/lib/history";
+import type { CompletionEntry, LibraryExercise, PlanItem } from "@/types";
 
 /**
- * Per-exercise logging screen: shows what you lifted last week, then lets you
- * dial in today's sets/reps/kg and mark it done in one action.
+ * Per-exercise logging screen: shows how the working weight has moved over
+ * time, then lets you dial in today's sets/reps/kg and mark it done.
  */
 export default function LogSheet({
   open,
   onClose,
   exercise,
   item,
+  entry,
   history,
   isDone,
   onSave,
@@ -26,6 +28,8 @@ export default function LogSheet({
   onClose: () => void;
   exercise: LibraryExercise | undefined;
   item: PlanItem | null;
+  /** What was already logged for this exercise on the day being viewed. */
+  entry: CompletionEntry | undefined;
   history: ExerciseHistory | undefined;
   isDone: boolean;
   onSave: (next: { sets: number; reps: number; weightKg: number; markDone: boolean }) => void;
@@ -40,21 +44,25 @@ export default function LogSheet({
     if (!open) setDetail(false);
   }, [open]);
 
-  // Re-seed the controls whenever a different exercise is opened.
+  /*
+   * Re-seed whenever a different exercise is opened. A day that already has a
+   * completion seeds from *that*, so reopening a past session shows what you
+   * lifted then rather than what the plan has since moved on to.
+   */
   useEffect(() => {
     if (!item) return;
-    setSets(item.sets);
-    setReps(item.reps);
-    setWeightKg(item.weightKg);
-  }, [item]);
+    const logged = entry?.done ? entry : null;
+    setSets(logged?.setsDone ?? item.sets);
+    setReps(logged?.repsDone ?? item.reps);
+    setWeightKg(logged?.weightKg ?? item.weightKg);
+  }, [item, entry]);
 
   if (!item) return null;
 
   const group = exercise?.group ?? "core";
   const g = GROUPS[group];
-  const last = history?.lastKg ?? 0;
-  const best = history?.bestKg ?? 0;
-  const suggestion = last || 0;
+  // Suggest the last weight actually lifted, not the planned one.
+  const suggestion = history?.lastKg ?? 0;
 
   return (
     <Sheet open={open} onClose={onClose} title="Log this exercise">
@@ -79,54 +87,21 @@ export default function LogSheet({
           </div>
         </div>
 
-        {/*
-          "Last time", not "last week": this session can land on any weekday, so
-          the previous occurrence is the only reference point that always exists.
-        */}
-        <div className="mt-3 rounded-card bg-raised p-4">
-          <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
-            Last time
+        {history && history.points.length > 0 ? (
+          <div className="mt-3">
+            <ProgressChart points={history.points} />
           </div>
-          {last > 0 ? (
-            <>
-              <div className="mt-1.5 font-display text-[32px] font-black leading-none text-accent-text">
-                {formatKg(last)}
-                <span className="ml-1 text-[15px] font-bold text-muted">kg</span>
-              </div>
-              {history?.lastOn && (
-                <div className="mt-1.5 text-[12px] text-muted">
-                  {formatDayLabel(history.lastOn)}
-                  {history.lastSets > 0 && (
-                    <> · {history.lastSets} × {history.lastReps}</>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
+        ) : (
+          <div className="mt-3 rounded-card bg-raised p-4">
+            <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
+              Working weight
+            </div>
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
               You haven&apos;t logged this one yet. Whatever you put in now becomes the
               number to beat next time.
             </p>
-          )}
-
-          {(best > 0 || history?.lastOn) && (
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 border-t border-line pt-3 text-[12px] text-muted">
-              {best > 0 && (
-                <span>
-                  All-time best <b className="font-semibold text-text">{formatKg(best)}kg</b>
-                </span>
-              )}
-              {history?.lastOn && history.lastSets > 0 && (
-                <span>
-                  Last session{" "}
-                  <b className="font-semibold text-text">
-                    {history.lastSets} × {history.lastReps}
-                  </b>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* today */}
         <div className="mt-3 rounded-card bg-raised p-4">

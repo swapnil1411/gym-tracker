@@ -56,12 +56,16 @@ export interface Workout {
 }
 
 /**
- * schedule/{YYYY-MM-DD} — which workout a specific date points at.
- * An explicit null workoutId means "rest day", distinct from "unassigned",
- * which is the absence of the document.
+ * schedule/{YYYY-MM-DD} — which workouts a specific date points at.
+ *
+ * A list, because one day can be Pull *and* Cardio. An empty list is an
+ * explicit rest day, which is distinct from "unassigned" — that is the absence
+ * of the document, and falls through to the weekday default.
  */
 export interface ScheduledDay {
-  workoutId: string | null;
+  workoutIds: string[];
+  /** @deprecated Single-session shape, read for back-compat. */
+  workoutId?: string | null;
 }
 
 /**
@@ -69,7 +73,7 @@ export interface ScheduledDay {
  * Indexed 0=Mon .. 6=Sun.
  */
 export interface WeeklyDefaults {
-  byWeekday: Record<number, string | null>;
+  byWeekday: Record<number, string[] | string | null>;
   /** Set once the one-off import from the old plan/{weekday} docs has run. */
   migratedAt?: string;
 }

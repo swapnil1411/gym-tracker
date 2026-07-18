@@ -2,9 +2,14 @@
 
 export type Tab = "today" | "plan" | "stats";
 
+/*
+ * Plan is deliberately absent. Sessions are created, named, filled and
+ * scheduled from the tracker itself, so a permanent tab for it was a third of
+ * the nav bar spent on a screen you rarely need. It is still reachable from the
+ * calendar button in the tracker header, where the week-level settings live.
+ */
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: "today", label: "Today", icon: "🔥" },
-  { id: "plan", label: "Plan", icon: "🗓" },
   { id: "stats", label: "Stats", icon: "📈" },
 ];
 
