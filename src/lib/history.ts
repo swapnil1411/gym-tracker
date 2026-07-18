@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useCompletionsRange } from "./store";
 import { dateKey, parseDateKey } from "./groups";
-import { startOfWeek } from "./stats";
 
 export interface ExerciseHistory {
   /** Heaviest weight ever logged for this exercise. */
@@ -14,9 +13,8 @@ export interface ExerciseHistory {
   lastReps: number;
   lastSets: number;
   lastOn: string | null;
-  /** Heaviest logged during the previous Mon–Sun week — "what you did last week". */
-  lastWeekBestKg: number;
-  lastWeekOn: string | null;
+  /** How many separate days this exercise has been logged. */
+  sessions: number;
 }
 
 const empty = (): ExerciseHistory => ({
@@ -26,13 +24,16 @@ const empty = (): ExerciseHistory => ({
   lastReps: 0,
   lastSets: 0,
   lastOn: null,
-  lastWeekBestKg: 0,
-  lastWeekOn: null,
+  sessions: 0,
 });
 
 /**
- * Per-exercise weight history, so the tracker can tell you what you lifted
- * last week before you decide what to load today.
+ * Per-exercise weight history, so the tracker can tell you what you last
+ * lifted before you decide what to load today.
+ *
+ * Keyed on the exercise rather than the calendar. Once a workout can land on
+ * any weekday, "last week" is the wrong question — you might hit Push twice in
+ * one week or once in ten days. "Last time you did this" is always meaningful.
  *
  * Reads a rolling window (default a year) from the same completions collection
  * the dashboard uses, so Firestore's offline cache usually serves it for free.
@@ -48,16 +49,6 @@ export function useExerciseHistory(windowDays = 365) {
   const to = useMemo(() => dateKey(today), [today]);
 
   const { days, loading } = useCompletionsRange(from, to);
-
-  // Previous calendar week, Mon–Sun.
-  const { lastWeekStart, lastWeekEnd } = useMemo(() => {
-    const thisWeekStart = startOfWeek(today);
-    const start = new Date(thisWeekStart);
-    start.setDate(start.getDate() - 7);
-    const end = new Date(thisWeekStart);
-    end.setDate(end.getDate() - 1);
-    return { lastWeekStart: dateKey(start), lastWeekEnd: dateKey(end) };
-  }, [today]);
 
   const history = useMemo(() => {
     const map = new Map<string, ExerciseHistory>();
@@ -82,16 +73,12 @@ export function useExerciseHistory(windowDays = 365) {
           h.lastSets = entry.setsDone ?? 0;
           h.lastOn = key;
         }
-        if (key >= lastWeekStart && key <= lastWeekEnd && kg > h.lastWeekBestKg) {
-          h.lastWeekBestKg = kg;
-          h.lastWeekOn = key;
-        }
-
+        h.sessions += 1;
         map.set(exId, h);
       }
     }
     return map;
-  }, [days, today, lastWeekStart, lastWeekEnd]);
+  }, [days, today]);
 
   return { history, loading };
 }

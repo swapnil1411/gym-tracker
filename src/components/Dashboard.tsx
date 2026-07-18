@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
 import ThemeToggle from "./ThemeToggle";
-import { DAYS, GROUPS, barColor, dateKey, toMondayIndex } from "@/lib/groups";
+import { DAYS, GROUPS, barColor, dateKey } from "@/lib/groups";
 import { indexById, useLibrary } from "@/lib/library";
-import { useCompletionsRange, usePlan } from "@/lib/store";
+import { useCompletionsRange } from "@/lib/store";
+import { useSchedule, useWorkouts } from "@/lib/workouts";
 import {
   completionFraction,
   currentStreak,
@@ -34,7 +35,26 @@ const Card = ({
 export default function Dashboard() {
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
-  const { plan, getDay } = usePlan();
+  const { workouts } = useWorkouts();
+  const { resolve } = useSchedule();
+
+  /** Planned exercise count for a date, via whatever workout it points at. */
+  const totalFor = useCallback(
+    (key: string) => {
+      const id = resolve(key).workoutId;
+      return id ? workouts[id]?.items.length ?? 0 : 0;
+    },
+    [resolve, workouts]
+  );
+
+  /** Session name for a date, for labelling rows. */
+  const nameFor = useCallback(
+    (key: string) => {
+      const id = resolve(key).workoutId;
+      return id ? workouts[id]?.name ?? null : null;
+    },
+    [resolve, workouts]
+  );
 
   const today = useMemo(() => new Date(), []);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -125,7 +145,7 @@ export default function Dashboard() {
             {thisWeek.map((d, i) => {
               const key = dateKey(d);
               const done = doneCountFor(days[key]);
-              const total = getDay(i).items.length;
+              const total = totalFor(key);
               const isToday = key === dateKey(today);
               return (
                 <div key={key} className="flex flex-col items-center gap-1.5">
@@ -178,7 +198,7 @@ export default function Dashboard() {
             {cells.map((d, i) => {
               if (!d) return <div key={`pad-${i}`} />;
               const key = dateKey(d);
-              const frac = completionFraction(key, days, plan);
+              const frac = completionFraction(key, days, totalFor);
               const isToday = key === dateKey(today);
               const future = d > today;
               return (
@@ -268,10 +288,9 @@ export default function Dashboard() {
                   Number(key.slice(5, 7)) - 1,
                   Number(key.slice(8, 10))
                 );
-                const dow = toMondayIndex(d.getDay());
-                const day = getDay(dow);
+                const label = nameFor(key);
                 const done = doneCountFor(days[key]);
-                const total = day.items.length || done;
+                const total = totalFor(key) || done;
                 return (
                   <li
                     key={key}
@@ -283,7 +302,7 @@ export default function Dashboard() {
                         day: "numeric",
                         month: "short",
                       })}
-                      <span className="text-muted"> · {day.focusLabel}</span>
+                      {label && <span className="text-muted"> · {label}</span>}
                     </span>
                     <span
                       className={`font-display text-[12px] font-bold tabular-nums ${

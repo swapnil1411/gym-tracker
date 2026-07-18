@@ -52,9 +52,9 @@ export default function LogSheet({
 
   const group = exercise?.group ?? "core";
   const g = GROUPS[group];
-  const lastWeek = history?.lastWeekBestKg ?? 0;
+  const last = history?.lastKg ?? 0;
   const best = history?.bestKg ?? 0;
-  const suggestion = lastWeek || history?.lastKg || 0;
+  const suggestion = last || 0;
 
   return (
     <Sheet open={open} onClose={onClose} title="Log this exercise">
@@ -79,29 +79,33 @@ export default function LogSheet({
           </div>
         </div>
 
-        {/* last week */}
+        {/*
+          "Last time", not "last week": this session can land on any weekday, so
+          the previous occurrence is the only reference point that always exists.
+        */}
         <div className="mt-3 rounded-card bg-raised p-4">
           <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
-            Last week&apos;s best
+            Last time
           </div>
-          {lastWeek > 0 ? (
+          {last > 0 ? (
             <>
               <div className="mt-1.5 font-display text-[32px] font-black leading-none text-accent-text">
-                {formatKg(lastWeek)}
+                {formatKg(last)}
                 <span className="ml-1 text-[15px] font-bold text-muted">kg</span>
               </div>
-              {history?.lastWeekOn && (
+              {history?.lastOn && (
                 <div className="mt-1.5 text-[12px] text-muted">
-                  on {formatDayLabel(history.lastWeekOn)}
+                  {formatDayLabel(history.lastOn)}
+                  {history.lastSets > 0 && (
+                    <> · {history.lastSets} × {history.lastReps}</>
+                  )}
                 </div>
               )}
             </>
           ) : (
             <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
-              Nothing logged last week for this one.
-              {history?.lastOn
-                ? ` Last time was ${formatKg(history.lastKg)}kg on ${formatDayLabel(history.lastOn)}.`
-                : " This will be your first entry."}
+              You haven&apos;t logged this one yet. Whatever you put in now becomes the
+              number to beat next time.
             </p>
           )}
 

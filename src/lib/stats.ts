@@ -1,4 +1,4 @@
-import type { DayCompletions, LibraryExercise, PlanDay } from "@/types";
+import type { DayCompletions, LibraryExercise } from "@/types";
 import { dateKey, parseDateKey, toMondayIndex } from "./groups";
 
 type Entries = DayCompletions["entries"];
@@ -44,15 +44,21 @@ export function longestStreak(days: DaysMap): number {
 }
 
 /** How much of that date's plan was completed, 0..1. */
+/**
+ * How much of a day's planned work got done, 0..1.
+ *
+ * Takes a resolver rather than a plan map: which exercises a date was meant to
+ * hold depends on the workout scheduled for it, which is no longer derivable
+ * from the weekday alone.
+ */
 export function completionFraction(
   dayKey: string,
   days: DaysMap,
-  plan: Record<number, PlanDay>
+  totalFor: (dayKey: string) => number
 ): number {
   const done = doneCountFor(days[dayKey]);
   if (done === 0) return 0;
-  const dow = toMondayIndex(parseDateKey(dayKey).getDay());
-  const total = plan[dow]?.items.length ?? 0;
+  const total = totalFor(dayKey);
   if (total === 0) return 1; // trained something unplanned — still counts as a full day
   return Math.min(1, done / total);
 }

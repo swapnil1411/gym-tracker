@@ -29,7 +29,7 @@ export interface Library {
   exercises: LibraryExercise[];
 }
 
-/** An exercise as placed on a given weekday's plan. */
+/** An exercise as placed in a workout. */
 export interface PlanItem {
   exerciseId: string;
   sets: number;
@@ -39,7 +39,42 @@ export interface PlanItem {
   order: number;
 }
 
-/** plan/{dayOfWeek} — dayOfWeek 0=Mon .. 6=Sun */
+/**
+ * workouts/{workoutId} — a named session like "Push" or "Back + Biceps".
+ *
+ * The workout owns its exercises and their working weights, so the same Pull
+ * session carries the same loads whenever you next do it, regardless of which
+ * weekday that lands on.
+ */
+export interface Workout {
+  id: string;
+  name: string;
+  items: PlanItem[];
+  /** Position in the day selector. */
+  order: number;
+  createdAt: string;
+}
+
+/**
+ * schedule/{YYYY-MM-DD} — which workout a specific date points at.
+ * An explicit null workoutId means "rest day", distinct from "unassigned",
+ * which is the absence of the document.
+ */
+export interface ScheduledDay {
+  workoutId: string | null;
+}
+
+/**
+ * settings/schedule — the fallback used when a date has no explicit entry.
+ * Indexed 0=Mon .. 6=Sun.
+ */
+export interface WeeklyDefaults {
+  byWeekday: Record<number, string | null>;
+  /** Set once the one-off import from the old plan/{weekday} docs has run. */
+  migratedAt?: string;
+}
+
+/** @deprecated Superseded by Workout. Retained to read pre-migration data. */
 export interface PlanDay {
   dayOfWeek: number;
   focusLabel: string;

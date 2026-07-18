@@ -35,9 +35,15 @@ export function emptyPlanDay(dayOfWeek: number): PlanDay {
   };
 }
 
-/* -------------------------------- plan ----------------------------------- */
+/* ---------------------------- plan (legacy) ------------------------------- */
 
-/** Live subscription to all 7 plan days. */
+/**
+ * @deprecated Superseded by useWorkouts()/useSchedule() in lib/workouts.ts.
+ *
+ * Kept only so the plan/{weekday} documents remain readable. The migration
+ * copies them into the workouts collection and never deletes them, so this is
+ * the rollback path if the new model turns out wrong.
+ */
 export function usePlan() {
   const { user } = useAuth();
   const [plan, setPlan] = useState<Record<number, PlanDay>>({});
