@@ -11,6 +11,7 @@ import {
   doneCountFor,
   longestStreak,
   monthGrid,
+  tonnage,
   volumeByGroup,
   weekDates,
 } from "@/lib/stats";
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const thisWeek = useMemo(() => weekDates(today), [today]);
   const cells = useMemo(() => monthGrid(month), [month]);
   const volume = useMemo(() => volumeByGroup(thisWeek, days, byId), [thisWeek, days, byId]);
+  const weekTonnage = useMemo(() => tonnage(thisWeek, days), [thisWeek, days]);
   const maxVolume = Math.max(1, ...Object.values(volume));
   const volumeEntries = Object.entries(volume)
     .filter(([, v]) => v > 0)
@@ -228,7 +230,17 @@ export default function Dashboard() {
                   </div>
                 );
               })}
-              <p className="mt-1 text-[11px] text-muted">Sets completed, Mon–Sun.</p>
+              <div className="mt-1 flex items-baseline justify-between">
+                <p className="text-[11px] text-muted">Sets completed, Mon–Sun.</p>
+                {weekTonnage > 0 && (
+                  <p className="text-[11px] text-muted">
+                    <span className="font-display text-[13px] font-bold text-text">
+                      {weekTonnage.toLocaleString()}
+                    </span>{" "}
+                    kg moved
+                  </p>
+                )}
+              </div>
             </div>
           )}
         </Card>

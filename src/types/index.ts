@@ -34,6 +34,8 @@ export interface PlanItem {
   exerciseId: string;
   sets: number;
   reps: number;
+  /** Working weight in kg. 0 means bodyweight / not tracked. */
+  weightKg: number;
   order: number;
 }
 
@@ -48,6 +50,10 @@ export interface PlanDay {
 export interface CompletionEntry {
   done: boolean;
   setsDone: number;
+  /** Reps and weight as actually logged, snapshotted at completion time so
+   *  later edits to the plan never rewrite past sessions. */
+  repsDone?: number;
+  weightKg?: number;
   at: string;
 }
 

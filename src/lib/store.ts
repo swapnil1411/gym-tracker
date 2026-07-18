@@ -54,7 +54,11 @@ export function usePlan() {
       const next: Record<number, PlanDay> = {};
       snap.forEach((d) => {
         const data = d.data() as PlanDay;
-        next[Number(d.id)] = { ...data, items: data.items ?? [] };
+        next[Number(d.id)] = {
+          ...data,
+          // weightKg was added later — default it so older plan docs still work.
+          items: (data.items ?? []).map((it) => ({ ...it, weightKg: it.weightKg ?? 0 })),
+        };
       });
       setPlan(next);
       setLoading(false);
@@ -81,10 +85,10 @@ export function usePlan() {
   );
 
   const addExercise = useCallback(
-    async (dow: number, exerciseId: string, sets = 3, reps = 10) => {
+    async (dow: number, exerciseId: string, sets = 3, reps = 10, weightKg = 0) => {
       const day = plan[dow] ?? emptyPlanDay(dow);
       if (day.items.some((i) => i.exerciseId === exerciseId)) return;
-      const item: PlanItem = { exerciseId, sets, reps, order: day.items.length };
+      const item: PlanItem = { exerciseId, sets, reps, weightKg, order: day.items.length };
       await saveDay({ ...day, items: [...day.items, item] });
     },
     [plan, saveDay]
@@ -151,7 +155,7 @@ export function useDayCompletions(dayKey: string) {
   }, [user, dayKey]);
 
   const toggle = useCallback(
-    async (exerciseId: string, setsDone: number) => {
+    async (exerciseId: string, item: { sets: number; reps: number; weightKg: number }) => {
       if (!user) return;
       const ref = doc(getDb(), "users", user.uid, "completions", dayKey);
       const isDone = !entries[exerciseId]?.done;
@@ -162,7 +166,11 @@ export function useDayCompletions(dayKey: string) {
           entries: {
             [exerciseId]: {
               done: isDone,
-              setsDone: isDone ? setsDone : 0,
+              // Snapshot what was actually lifted. Changing the plan next week
+              // must not retroactively alter this session's numbers.
+              setsDone: isDone ? item.sets : 0,
+              repsDone: isDone ? item.reps : 0,
+              weightKg: isDone ? item.weightKg : 0,
               at: new Date().toISOString(),
             },
           },
@@ -173,7 +181,20 @@ export function useDayCompletions(dayKey: string) {
     [user, dayKey, entries]
   );
 
-  return { entries, toggle };
+  /** Adjust the logged weight for an already-completed exercise. */
+  const setLoggedWeight = useCallback(
+    async (exerciseId: string, weightKg: number) => {
+      if (!user) return;
+      await setDoc(
+        doc(getDb(), "users", user.uid, "completions", dayKey),
+        { entries: { [exerciseId]: { weightKg } } },
+        { merge: true }
+      );
+    },
+    [user, dayKey]
+  );
+
+  return { entries, toggle, setLoggedWeight };
 }
 
 /**

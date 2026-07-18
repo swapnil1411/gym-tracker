@@ -154,6 +154,15 @@ export default function PlanEditor() {
                       max={200}
                       onChange={(reps) => updateItem(selected, item.exerciseId, { reps })}
                     />
+                    <Stepper
+                      label="weight"
+                      value={item.weightKg}
+                      suffix=" kg"
+                      min={0}
+                      max={500}
+                      step={2.5}
+                      onChange={(weightKg) => updateItem(selected, item.exerciseId, { weightKg })}
+                    />
                   </div>
                 </div>
 

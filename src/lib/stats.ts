@@ -86,6 +86,24 @@ export function monthGrid(month: Date): (Date | null)[] {
   return cells;
 }
 
+/**
+ * Total weight moved across the given dates: sets × reps × kg, summed.
+ * Bodyweight entries (weightKg 0) contribute nothing, which is the honest
+ * answer for a "kg lifted" number.
+ */
+export function tonnage(dates: Date[], days: DaysMap): number {
+  let total = 0;
+  for (const d of dates) {
+    const entries = days[dateKey(d)];
+    if (!entries) continue;
+    for (const entry of Object.values(entries)) {
+      if (!entry.done) continue;
+      total += (entry.setsDone || 0) * (entry.repsDone || 0) * (entry.weightKg || 0);
+    }
+  }
+  return total;
+}
+
 /** Sets completed per muscle group across the given dates. */
 export function volumeByGroup(
   dates: Date[],

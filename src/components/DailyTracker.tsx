@@ -178,7 +178,7 @@ export default function DailyTracker() {
                     {g.name}
                   </span>
                   {editing ? (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <Stepper
                         label="sets"
                         value={item.sets}
@@ -192,10 +192,32 @@ export default function DailyTracker() {
                         max={200}
                         onChange={(reps) => updateItem(selected, item.exerciseId, { reps })}
                       />
+                      <Stepper
+                        label="weight"
+                        value={item.weightKg}
+                        suffix=" kg"
+                        min={0}
+                        max={500}
+                        step={2.5}
+                        onChange={(weightKg) =>
+                          updateItem(selected, item.exerciseId, { weightKg })
+                        }
+                      />
                     </div>
                   ) : (
                     <span className="text-[12px] font-medium text-muted">
                       {item.sets} × {item.reps}
+                      {item.weightKg > 0 && (
+                        <>
+                          {" · "}
+                          <span className="font-semibold text-text">
+                            {Number.isInteger(item.weightKg)
+                              ? item.weightKg
+                              : item.weightKg.toFixed(1)}
+                            kg
+                          </span>
+                        </>
+                      )}
                     </span>
                   )}
                 </div>
@@ -203,7 +225,7 @@ export default function DailyTracker() {
 
               {!editing && (
                 <button
-                  onClick={() => !isFuture && toggle(item.exerciseId, item.sets)}
+                  onClick={() => !isFuture && toggle(item.exerciseId, item)}
                   disabled={isFuture}
                   aria-pressed={isDone}
                   aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
