@@ -18,7 +18,7 @@ export default function BottomNav({
   return (
     <nav
       aria-label="Main"
-      className="pb-safe fixed bottom-0 left-1/2 z-10 w-full max-w-app -translate-x-1/2 border-t border-line bg-bg/90 backdrop-blur-lg"
+      className="pb-safe fixed bottom-0 left-1/2 z-10 w-full max-w-app -translate-x-1/2 glass"
     >
       <div className="flex">
         {TABS.map((t) => {
@@ -38,7 +38,7 @@ export default function BottomNav({
               </span>
               <span
                 className={`font-display text-[10px] font-bold tracking-[.08em] transition ${
-                  on ? "text-accent" : "text-muted"
+                  on ? "text-accent-text" : "text-muted"
                 }`}
               >
                 {t.label.toUpperCase()}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
 import Thumb from "./Thumb";
+import ExerciseDetail from "./ExerciseDetail";
 import Stepper from "./Stepper";
 import ExercisePicker from "./ExercisePicker";
 import LogSheet from "./LogSheet";
@@ -12,6 +13,7 @@ import { indexById, useLibrary } from "@/lib/library";
 import { useDayCompletions, usePlan } from "@/lib/store";
 import { useExerciseHistory, formatKg } from "@/lib/history";
 import { useAuth } from "@/lib/auth-context";
+import type { LibraryExercise } from "@/types";
 
 export default function DailyTracker() {
   const { logOut } = useAuth();
@@ -25,6 +27,7 @@ export default function DailyTracker() {
   const [editing, setEditing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [logId, setLogId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<LibraryExercise | null>(null);
   const [focusEditing, setFocusEditing] = useState(false);
   const [focusDraft, setFocusDraft] = useState("");
 
@@ -65,7 +68,7 @@ export default function DailyTracker() {
       <header className="pt-safe border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
         <div className="flex items-center justify-between gap-2">
           <div className="font-display text-[15px] font-black tracking-[.14em]">
-            GYM<span className="text-accent">·</span>LOG
+            GYM<span className="text-accent-text">·</span>LOG
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -73,7 +76,7 @@ export default function DailyTracker() {
               onClick={logOut}
               aria-label="Log out"
               title="Log out"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-surface text-muted transition active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-field bg-surface text-muted press"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
@@ -103,7 +106,7 @@ export default function DailyTracker() {
                 }}
                 placeholder="e.g. Back & Biceps"
                 aria-label={`Focus for ${DAYS[selected].full}`}
-                className="w-full rounded-lg border border-accent bg-raised px-2.5 py-1.5 text-[14px] font-semibold text-text outline-none"
+                className="w-full rounded-field border border-accent bg-raised px-2.5 py-1.5 text-[14px] font-semibold text-text outline-none"
               />
             ) : (
               <button
@@ -156,7 +159,7 @@ export default function DailyTracker() {
                 setEditing(false);
               }}
               aria-pressed={active}
-              className={`relative min-w-[54px] flex-none rounded-[11px] border px-3 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
+              className={`relative min-w-[54px] flex-none rounded-tile border px-3 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
                 active
                   ? "border-text bg-text text-bg"
                   : "border-line bg-surface text-muted"
@@ -182,7 +185,7 @@ export default function DailyTracker() {
         <button
           onClick={() => setEditing((v) => !v)}
           className={`py-1.5 text-[12.5px] font-semibold transition ${
-            editing ? "text-accent" : "text-muted"
+            editing ? "text-accent-text" : "text-muted"
           }`}
         >
           {editing ? "Done editing" : "Edit list"}
@@ -211,7 +214,7 @@ export default function DailyTracker() {
           </div>
         )}
 
-        {day.items.map((item) => {
+        {day.items.map((item, i) => {
           const ex = byId.get(item.exerciseId);
           const group = ex?.group ?? "core";
           const g = GROUPS[group];
@@ -221,6 +224,9 @@ export default function DailyTracker() {
           return (
             <div
               key={item.exerciseId}
+              // Stagger capped at 6 slots: past that the delay stops reading as
+              // choreography and starts reading as lag.
+              style={{ animationDelay: `${Math.min(i, 6) * 38}ms` }}
               // Tapping the card body opens the log screen; the checkbox stays a
               // one-tap shortcut for "did it exactly as planned".
               onClick={() => !editing && setLogId(item.exerciseId)}
@@ -233,12 +239,23 @@ export default function DailyTracker() {
                   setLogId(item.exerciseId);
                 }
               }}
-              className={`relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3 transition ${
-                isDone ? "border-done/25 bg-card-done" : "border-line bg-surface"
-              } ${editing ? "pr-12" : "cursor-pointer active:scale-[.99]"}`}
+              className={`rise-in relative flex items-center gap-3 overflow-hidden rounded-card p-3 ${
+                isDone ? "bg-card-done/80 backdrop-blur-xl" : "glass"
+              } ${editing ? "pr-12" : "cursor-pointer press press-card"}`}
             >
-              <div className={isDone ? "opacity-70 grayscale-[.5]" : ""}>
-                <Thumb src={ex?.image ?? null} group={group} alt="" />
+              <div
+                className={isDone ? "opacity-70 grayscale-[.5]" : ""}
+                // The whole card opens the log sheet; the thumbnail is a
+                // separate target for "show me how this is done".
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Thumb
+                  src={ex?.image ?? null}
+                  group={group}
+                  alt=""
+                  onPress={ex ? () => setDetail(ex) : undefined}
+                  pressLabel={ex ? `See how to do ${ex.name}` : undefined}
+                />
               </div>
 
               <div className="min-w-0 flex-1">
@@ -252,7 +269,7 @@ export default function DailyTracker() {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <span
                     className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-                    style={tagStyle(g.color)}
+                    style={tagStyle(g)}
                   >
                     {g.name}
                   </span>
@@ -317,7 +334,7 @@ export default function DailyTracker() {
                   disabled={isFuture}
                   aria-pressed={isDone}
                   aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
-                  className={`flex h-9 w-9 flex-none items-center justify-center rounded-[10px] border-2 transition active:scale-90 disabled:opacity-30 ${
+                  className={`flex h-9 w-9 flex-none items-center justify-center rounded-field border-2 press disabled:opacity-30 ${
                     isDone ? "border-done bg-done" : "border-line bg-transparent"
                   }`}
                 >
@@ -342,7 +359,7 @@ export default function DailyTracker() {
                     removeExercise(selected, item.exerciseId);
                   }}
                   aria-label={`Remove ${ex?.name ?? "exercise"}`}
-                  className="absolute bottom-0 right-0 top-0 w-11 text-lg text-muted transition hover:text-accent"
+                  className="absolute bottom-0 right-0 top-0 w-11 text-lg text-muted transition hover:text-accent-text"
                 >
                   ✕
                 </button>
@@ -353,7 +370,7 @@ export default function DailyTracker() {
 
         <button
           onClick={() => setPickerOpen(true)}
-          className="mt-1 flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
+          className="mt-1 flex items-center justify-center gap-2 rounded-card border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
         >
           <span className="text-lg leading-none">+</span> Add exercise
         </button>
@@ -384,6 +401,8 @@ export default function DailyTracker() {
           }
         }}
       />
+
+      <ExerciseDetail exercise={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }

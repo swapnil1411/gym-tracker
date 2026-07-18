@@ -16,7 +16,7 @@ export default function Home() {
     return (
       <main className="flex min-h-dvh w-full max-w-app items-center justify-center">
         <div className="animate-fadeIn font-display text-[15px] font-black tracking-[.14em] text-muted">
-          GYM<span className="text-accent">·</span>LOG
+          GYM<span className="text-accent-text">·</span>LOG
         </div>
       </main>
     );

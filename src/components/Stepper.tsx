@@ -26,7 +26,7 @@ export default function Stepper({
   const shown = Number.isInteger(value) ? value : value.toFixed(1);
 
   return (
-    <div className="flex items-center gap-1.5 rounded-lg border border-line bg-raised px-1.5 py-1">
+    <div className="flex items-center gap-1.5 rounded-field bg-raised px-1.5 py-1">
       <button
         type="button"
         aria-label={`Decrease ${label}`}

@@ -54,7 +54,7 @@ export default function ProgressRing({
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <b
             className={`font-display text-[15px] font-extrabold leading-none ${
-              complete ? "text-done" : ""
+              complete ? "text-done-text" : ""
             }`}
           >
             {done}/{total}

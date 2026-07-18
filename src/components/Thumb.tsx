@@ -14,12 +14,17 @@ export default function Thumb({
   size = 52,
   radius = 12,
   alt = "",
+  onPress,
+  pressLabel,
 }: {
   src: string | null;
   group: MuscleGroup;
   size?: number;
   radius?: number;
   alt?: string;
+  /** When set the tile becomes a button — used to open the full exercise view. */
+  onPress?: () => void;
+  pressLabel?: string;
 }) {
   const g = GROUPS[group];
   const [failed, setFailed] = useState(false);
@@ -35,21 +40,17 @@ export default function Thumb({
     boxShadow: `inset 0 0 0 1px ${hexA(g.color, 0.35)}`,
   };
 
-  if (!src || failed) {
-    return (
-      <div
-        style={{ ...style, fontSize: size * 0.5 }}
-        className="flex flex-none items-center justify-center"
+  const inner =
+    !src || failed ? (
+      <span
+        style={{ fontSize: size * 0.5 }}
+        className="flex h-full w-full items-center justify-center"
         aria-hidden="true"
       >
         {g.icon}
-      </div>
-    );
-  }
-
-  return (
-    <div style={style} className="flex-none overflow-hidden">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
+      </span>
+    ) : (
+      /* eslint-disable-next-line @next/next/no-img-element */
       <img
         src={src}
         alt={alt}
@@ -61,6 +62,32 @@ export default function Thumb({
         className="h-full w-full object-cover"
         style={{ borderRadius: radius }}
       />
-    </div>
+    );
+
+  if (!onPress) {
+    return (
+      <div style={style} className="flex-none overflow-hidden">
+        {inner}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      aria-label={pressLabel ?? "View exercise"}
+      style={style}
+      className="relative flex-none overflow-hidden press"
+    >
+      {inner}
+      {/* Small affordance so the tile reads as tappable rather than decorative. */}
+      <span
+        aria-hidden="true"
+        className="absolute bottom-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-tl-md bg-black/60 text-[8px] leading-none text-white"
+      >
+        ⤢
+      </span>
+    </button>
   );
 }

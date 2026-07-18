@@ -3,52 +3,108 @@
 @tailwind utilities;
 
 /*
- * Theme tokens are raw "R G B" channel triplets, not hex, so Tailwind can do
+ * Palette: Radix Colors — iris (accent), slate (neutrals, the gray Radix pairs
+ * with iris), jade (success). Contrast is tuned with APCA upstream, so the
+ * steps are used for the roles they were designed for rather than eyeballed:
+ *   1 app bg · 2 subtle bg · 3 UI bg · 6 border · 9 solid · 11 text · 12 headline
+ *
+ * Tokens are raw "R G B" channel triplets, not hex, so Tailwind can do
  * bg-surface/60 and text-muted/70 against them (see tailwind.config.ts).
  */
 :root,
 [data-theme="dark"] {
-  --bg: 14 17 20;
-  --surface: 24 29 34;
-  --raised: 33 40 48;
-  --line: 42 50 59;
-  --text: 243 242 236;
-  --muted: 139 148 158;
-  --accent: 255 90 31;
-  --done: 57 217 138;
+  /*
+   * Cards carry no border, so the surface ramp has to do that work on its own
+   * — hence the wider spacing between these than a bordered design needs.
+   */
+  --bg: 17 17 19; /* slate 1 */
+  --surface: 33 34 37; /* slate 3 */
+  --raised: 46 49 53; /* slate 5 — sits inside surface */
+  --line: 54 58 63; /* slate 6 — dividers only now, not card outlines */
+  /* Dark UIs get depth from lightness, not shadow: shadows vanish on near-black. */
+  --lift: 0 0 0 1px rgb(0 0 0 / 0.4);
+  --lift-strong: 0 1px 2px rgb(0 0 0 / 0.5);
+  --text: 237 238 240; /* slate 12 */
+  --muted: 176 180 186; /* slate 11 — guaranteed 4.5:1, unlike a dimmed grey */
+
+  /*
+   * Step 9 is the solid fill and is *identical* in both themes; step 11 is the
+   * shade that stays legible as text. Using 9 for text is what made the old
+   * accent look cheap — it was never meant to be read against the page.
+   */
+  --accent: 91 91 214; /* iris 9 */
+  --accent-text: 177 169 255; /* iris 11 */
+  --on-accent: 255 255 255;
+  --done: 41 163 131; /* jade 9 */
+  --done-text: 31 216 164; /* jade 11 */
+  /* jade 9 is one of Radix's light solids: white on it is only 3.1:1, so the
+     ink on a done fill is dark (jade 12) rather than white. */
+  --on-done: 13 21 18;
 
   /* header wash + the tinted background of a completed card */
-  --header-top: 18 23 28;
-  --card-done: 21 26 24;
-  --heat-empty: 22 27 33;
-  --nav-bg: 14 17 20 / 0.92;
+  --header-top: 24 25 27;
+  --card-done: 18 28 24; /* jade 2 */
+  --heat-empty: 33 34 37;
+  --nav-bg: 17 17 19 / 0.92;
 
-  /* muscle-group tags: full-strength colour reads fine on a dark field */
-  --tag-darken: 0%;
-  --tag-alpha: 0.16;
+  --tag-alpha: 0.18;
+
+  /* Glass. Dark mode tolerates a stronger tint and a brighter specular edge:
+     the highlight is what separates "glass" from "translucent grey". */
+  --glass-tint: 62%;
+  --glass-edge: rgb(255 255 255 / 0.1);
+  --glass-sheen: rgb(255 255 255 / 0.055);
+  --bloom-a: 0.16;
+  --bloom-b: 0.09;
 
   color-scheme: dark;
 }
 
+/*
+ * Light mode is not the dark tokens flipped, but the *ordering* of the surface
+ * ramp has to hold in both: bg < surface < raised in perceived elevation.
+ * Getting that backwards (raised lighter than a white surface) is what made
+ * list rows inside a sheet invisible against it.
+ *
+ * Depth here comes from shadow, which is the opposite of dark mode — hence
+ * --lift carrying real shadows on this side and near-nothing on the other.
+ */
 [data-theme="light"] {
-  --bg: 246 245 241;
+  --bg: 242 242 246; /* page reads clearly below the white cards on it */
   --surface: 255 255 255;
-  --raised: 241 239 233;
-  --line: 225 221 212;
-  --text: 22 25 28;
-  --muted: 106 114 124;
-  /* deepened so both clear 4.5:1 against a near-white surface */
-  --accent: 214 62 12;
-  --done: 15 148 85;
+  --raised: 232 232 236; /* slate 4 — reads as inset without needing a border */
+  --line: 220 221 228; /* slate 6/7 — dividers only */
+  --text: 28 32 36; /* slate 12 */
+  --muted: 96 100 108; /* slate 11 */
+
+  /*
+   * Step 9, not the deeper step 10 I had here: white text needs a luminous
+   * fill under it to feel crisp. A darker violet just made the button muddy.
+   */
+  --accent: 91 91 214; /* iris 9 */
+  --accent-text: 87 83 198; /* iris 11 */
+  --on-accent: 255 255 255;
+  --done: 41 163 131; /* jade 9 */
+  --done-text: 32 131 104; /* jade 11 */
+  --on-done: 13 21 18; /* see the dark block */
+
+  --lift: 0 1px 2px rgb(20 22 40 / 0.06), 0 1px 1px rgb(20 22 40 / 0.04);
+  --lift-strong: 0 2px 4px rgb(63 63 140 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.18);
 
   --header-top: 255 255 255;
-  --card-done: 236 247 240;
-  --heat-empty: 235 233 227;
+  --card-done: 230 247 237; /* jade 3 */
+  --heat-empty: 224 225 230; /* slate 5 */
   --nav-bg: 255 255 255 / 0.92;
 
-  /* the same group hues would wash out on white, so darken the tag text */
-  --tag-darken: 38%;
-  --tag-alpha: 0.18;
+  --tag-alpha: 0.16;
+
+  /* Light glass must stay closer to opaque — dark text over a blurred backdrop
+     loses contrast fast, and there is no headroom above white to add sheen. */
+  --glass-tint: 76%;
+  --glass-edge: rgb(255 255 255 / 0.65);
+  --glass-sheen: rgb(255 255 255 / 0.4);
+  --bloom-a: 0.1;
+  --bloom-b: 0.06;
 
   color-scheme: light;
 }
@@ -62,6 +118,34 @@ body {
   margin: 0;
   background: rgb(var(--bg));
   color: rgb(var(--text));
+}
+
+/*
+ * Ambient wash behind everything.
+ *
+ * Frosted glass is only legible as glass when there is something behind it to
+ * blur — over a flat fill it just reads as slightly grey plastic. These two
+ * very soft accent blooms are what the cards actually refract. They are fixed
+ * rather than scrolling, so the glass shifts against them as the list moves,
+ * which is what sells the depth.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      68vw 42vh at 12% -6%,
+      rgb(var(--accent) / var(--bloom-a)),
+      transparent 62%
+    ),
+    radial-gradient(
+      52vw 38vh at 92% 8%,
+      rgb(var(--done) / var(--bloom-b)),
+      transparent 60%
+    );
 }
 
 body {
@@ -99,6 +183,131 @@ textarea {
 
 .ring-fill {
   transition: stroke-dashoffset 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/*
+ * Frosted-glass surface.
+ *
+ * Three layers, and all three are load-bearing:
+ *   1. a partly-transparent tint, so the bloom behind shows through;
+ *   2. backdrop blur *plus saturation* — the saturation boost is what makes it
+ *      read as glass rather than fog, since real glass concentrates colour;
+ *   3. a specular edge: a bright hairline along the top, dimmer at the bottom.
+ *      This is the single most important part. Without it you have translucent
+ *      plastic. Light catching an edge is what the eye reads as a solid pane.
+ */
+.glass {
+  background: color-mix(in srgb, rgb(var(--surface)) var(--glass-tint), transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 0 0 1px var(--glass-sheen),
+    var(--lift);
+}
+
+/*
+ * Safari/Chrome will happily paint a *scrolling* backdrop-filter at reduced
+ * quality; keeping the blur radius modest and the layer promoted avoids the
+ * repaint stutter that makes glass lists feel cheap on mid-range Android.
+ */
+/*
+ * Opaque sibling of .glass, for surfaces sitting over the modal scrim.
+ * A translucent sheet would blur `black/60` and come out muddy — in light mode
+ * catastrophically so. It keeps the specular edge, which is what carries the
+ * "island" look; the transparency was never the part doing that work.
+ */
+.pane {
+  background: rgb(var(--surface));
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    inset 0 0 0 1px var(--glass-sheen),
+    var(--lift-strong);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* No blur support: fall back to an opaque surface rather than a washed-out
+     card with unreadable text over the bloom. */
+  .glass {
+    background: rgb(var(--surface));
+  }
+}
+
+/*
+ * Entrance. Cards rise and fade in on a short stagger — the delay is set
+ * inline per index. Kept under ~40ms apart and capped, or the last row of a
+ * long list arrives late enough to feel broken rather than choreographed.
+ */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.rise-in {
+  animation: riseIn 420ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+/*
+ * Press feedback.
+ *
+ * The whole trick is asymmetry: the press has to land almost instantly (90ms)
+ * or the surface feels laggy under your thumb, but the release has to settle
+ * slowly (320ms) or it feels like a snap. Equal durations in both directions
+ * are what make a button feel cheap — it reads as a state flip rather than a
+ * physical surface. Compositor-only properties (transform/opacity) so it stays
+ * at 60fps mid-scroll on a phone.
+ *
+ * The ::after layer is a Material-style state layer: a translucent scrim in the
+ * *current text colour*, so it works on any fill without knowing the theme.
+ */
+.press {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+  transition:
+    transform 320ms cubic-bezier(0.2, 0, 0, 1),
+    box-shadow 320ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.press::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.press:active {
+  transform: scale(0.972);
+  transition-duration: 90ms;
+}
+
+.press:active::after {
+  opacity: 0.08;
+  transition-duration: 90ms;
+}
+
+/* Pointer devices get a hover layer; touch never triggers this. */
+@media (hover: hover) {
+  .press:hover::after {
+    opacity: 0.045;
+  }
+}
+
+/* Large surfaces need a subtler squeeze — the same 2.8% on a full-width card
+   reads as the whole page lurching. */
+.press-card:active {
+  transform: scale(0.988);
 }
 
 @media (prefers-reduced-motion: reduce) {

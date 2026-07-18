@@ -6,7 +6,7 @@ import { authErrorMessage, useAuth } from "@/lib/auth-context";
 type Mode = "login" | "signup" | "reset";
 
 const input =
-  "w-full rounded-xl border border-line bg-raised px-4 py-3.5 text-[15px] text-text placeholder:text-muted/70 outline-none focus:border-accent transition-colors";
+  "w-full rounded-field bg-raised px-4 py-3.5 text-[15px] text-text placeholder:text-muted/70 outline-none focus:border-accent transition-colors";
 
 export default function AuthScreen() {
   const { signIn, signUp, signInWithGoogle, resetPassword, configured } = useAuth();
@@ -22,7 +22,7 @@ export default function AuthScreen() {
     return (
       <main className="flex min-h-dvh w-full max-w-app flex-col justify-center px-6">
         <h1 className="font-display text-2xl font-black tracking-[.14em]">
-          GYM<span className="text-accent">·</span>LOG
+          GYM<span className="text-accent-text">·</span>LOG
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-muted">
           Firebase isn&apos;t configured yet. Copy <code className="text-text">.env.example</code> to{" "}
@@ -71,7 +71,7 @@ export default function AuthScreen() {
   return (
     <main className="flex min-h-dvh w-full max-w-app flex-col justify-center px-6 py-10">
       <div className="font-display text-[15px] font-black tracking-[.14em]">
-        GYM<span className="text-accent">·</span>LOG
+        GYM<span className="text-accent-text">·</span>LOG
       </div>
       <h1 className="mt-6 font-display text-[34px] font-black uppercase leading-[.95] tracking-tight">
         {title}
@@ -117,12 +117,12 @@ export default function AuthScreen() {
         )}
 
         {error && (
-          <p role="alert" className="rounded-xl bg-accent/10 px-3.5 py-2.5 text-[13px] text-accent">
+          <p role="alert" className="rounded-field bg-accent/10 px-3.5 py-2.5 text-[13px] text-accent-text">
             {error}
           </p>
         )}
         {notice && (
-          <p role="status" className="rounded-xl bg-done/10 px-3.5 py-2.5 text-[13px] text-done">
+          <p role="status" className="rounded-field bg-done/10 px-3.5 py-2.5 text-[13px] text-done-text">
             {notice}
           </p>
         )}
@@ -130,7 +130,7 @@ export default function AuthScreen() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-1 rounded-xl bg-accent px-4 py-3.5 font-body text-[15px] font-bold text-white transition disabled:opacity-60"
+          className="mt-1 rounded-field bg-accent px-4 py-3.5 font-body text-[15px] font-bold text-on-accent shadow-lift-strong transition disabled:opacity-60"
         >
           {busy ? "…" : cta}
         </button>
@@ -144,7 +144,7 @@ export default function AuthScreen() {
           <button
             onClick={google}
             disabled={busy}
-            className="flex items-center justify-center gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 text-[15px] font-semibold transition hover:border-muted disabled:opacity-60"
+            className="flex items-center justify-center gap-3 rounded-field bg-surface px-4 py-3.5 text-[15px] font-semibold transition hover:border-muted disabled:opacity-60"
           >
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
               <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.0 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z" />

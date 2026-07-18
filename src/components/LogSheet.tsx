@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Sheet from "./Sheet";
 import Thumb from "./Thumb";
+import ExerciseDetail from "./ExerciseDetail";
 import Stepper from "./Stepper";
 import { GROUPS, tagStyle } from "@/lib/groups";
 import { formatDayLabel, formatKg, type ExerciseHistory } from "@/lib/history";
@@ -32,6 +33,12 @@ export default function LogSheet({
   const [sets, setSets] = useState(item?.sets ?? 3);
   const [reps, setReps] = useState(item?.reps ?? 10);
   const [weightKg, setWeightKg] = useState(item?.weightKg ?? 0);
+  const [detail, setDetail] = useState(false);
+
+  // Same reason as in ExercisePicker: closed does not mean unmounted.
+  useEffect(() => {
+    if (!open) setDetail(false);
+  }, [open]);
 
   // Re-seed the controls whenever a different exercise is opened.
   useEffect(() => {
@@ -53,13 +60,19 @@ export default function LogSheet({
     <Sheet open={open} onClose={onClose} title="Log this exercise">
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         {/* which exercise */}
-        <div className="flex items-center gap-3 rounded-2xl border border-line bg-raised p-3">
-          <Thumb src={exercise?.image ?? null} group={group} size={46} />
+        <div className="flex items-center gap-3 rounded-card bg-raised p-3">
+          <Thumb
+            src={exercise?.image ?? null}
+            group={group}
+            size={46}
+            onPress={exercise ? () => setDetail(true) : undefined}
+            pressLabel={exercise ? `See how to do ${exercise.name}` : undefined}
+          />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-bold">{exercise?.name ?? "Exercise"}</div>
             <span
               className="mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-              style={tagStyle(g.color)}
+              style={tagStyle(g)}
             >
               {g.name}
             </span>
@@ -67,13 +80,13 @@ export default function LogSheet({
         </div>
 
         {/* last week */}
-        <div className="mt-3 rounded-2xl border border-line bg-raised p-4">
+        <div className="mt-3 rounded-card bg-raised p-4">
           <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
             Last week&apos;s best
           </div>
           {lastWeek > 0 ? (
             <>
-              <div className="mt-1.5 font-display text-[32px] font-black leading-none text-accent">
+              <div className="mt-1.5 font-display text-[32px] font-black leading-none text-accent-text">
                 {formatKg(lastWeek)}
                 <span className="ml-1 text-[15px] font-bold text-muted">kg</span>
               </div>
@@ -112,7 +125,7 @@ export default function LogSheet({
         </div>
 
         {/* today */}
-        <div className="mt-3 rounded-2xl border border-line bg-raised p-4">
+        <div className="mt-3 rounded-card bg-raised p-4">
           <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">Today</div>
 
           <div className="mt-3 flex flex-col gap-3">
@@ -138,7 +151,7 @@ export default function LogSheet({
           {suggestion > 0 && weightKg !== suggestion && (
             <button
               onClick={() => setWeightKg(suggestion)}
-              className="mt-3 w-full rounded-xl border border-dashed border-line py-2.5 text-[13px] font-semibold text-muted transition hover:border-accent hover:text-text"
+              className="mt-3 w-full rounded-field border border-dashed border-line py-2.5 text-[13px] font-semibold text-muted transition hover:border-accent hover:text-text"
             >
               Match last time — {formatKg(suggestion)}kg
             </button>
@@ -146,7 +159,7 @@ export default function LogSheet({
           {suggestion > 0 && (
             <button
               onClick={() => setWeightKg(suggestion + 2.5)}
-              className="mt-2 w-full rounded-xl border border-dashed border-line py-2.5 text-[13px] font-semibold text-muted transition hover:border-accent hover:text-text"
+              className="mt-2 w-full rounded-field border border-dashed border-line py-2.5 text-[13px] font-semibold text-muted transition hover:border-accent hover:text-text"
             >
               Add 2.5kg — {formatKg(suggestion + 2.5)}kg
             </button>
@@ -159,7 +172,7 @@ export default function LogSheet({
               onSave({ sets, reps, weightKg, markDone: false });
               onClose();
             }}
-            className="flex-1 rounded-xl border border-line bg-surface py-3.5 text-[15px] font-semibold transition active:scale-[.98]"
+            className="flex-1 rounded-field bg-surface py-3.5 text-[15px] font-semibold press"
           >
             Save
           </button>
@@ -168,7 +181,7 @@ export default function LogSheet({
               onSave({ sets, reps, weightKg, markDone: true });
               onClose();
             }}
-            className={`flex-1 rounded-xl py-3.5 text-[15px] font-bold text-white transition active:scale-[.98] ${
+            className={`flex-1 rounded-field py-3.5 text-[15px] font-bold text-on-accent shadow-lift-strong press ${
               isDone ? "bg-done" : "bg-accent"
             }`}
           >
@@ -176,6 +189,11 @@ export default function LogSheet({
           </button>
         </div>
       </div>
+
+      <ExerciseDetail
+        exercise={detail ? (exercise ?? null) : null}
+        onClose={() => setDetail(false)}
+      />
     </Sheet>
   );
 }

@@ -25,7 +25,7 @@ const Card = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <section className="rounded-2xl border border-line bg-surface p-4">
+  <section className="rounded-card bg-surface p-4">
     <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">{title}</h2>
     <div className="mt-3">{children}</div>
   </section>
@@ -83,7 +83,7 @@ export default function Dashboard() {
       <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
         <div className="flex items-center justify-between gap-2">
           <div className="font-display text-[15px] font-black tracking-[.14em]">
-            YOUR<span className="text-accent">·</span>PROGRESS
+            YOUR<span className="text-accent-text">·</span>PROGRESS
           </div>
           <ThemeToggle />
         </div>
@@ -95,22 +95,22 @@ export default function Dashboard() {
       <div className="flex flex-col gap-3 px-4 py-4">
         {/* ------------------------------- streaks ------------------------------- */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="rounded-card bg-surface p-4">
             <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
               Current streak
             </div>
-            <div className="mt-2 font-display text-[34px] font-black leading-none text-accent">
+            <div className="mt-2 font-display text-[34px] font-black leading-none text-accent-text">
               {streak}
               <span className="ml-1 text-[13px] font-semibold text-muted">
                 {streak === 1 ? "day" : "days"}
               </span>
             </div>
           </div>
-          <div className="rounded-2xl border border-line bg-surface p-4">
+          <div className="rounded-card bg-surface p-4">
             <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
               Longest streak
             </div>
-            <div className="mt-2 font-display text-[34px] font-black leading-none text-done">
+            <div className="mt-2 font-display text-[34px] font-black leading-none text-done-text">
               {best}
               <span className="ml-1 text-[13px] font-semibold text-muted">
                 {best === 1 ? "day" : "days"}
@@ -132,7 +132,7 @@ export default function Dashboard() {
                   <ProgressRing done={done} total={total || Math.max(done, 1)} size={38} stroke={4} showText={false} />
                   <span
                     className={`font-display text-[10px] font-bold tracking-[.08em] ${
-                      isToday ? "text-accent" : "text-muted"
+                      isToday ? "text-accent-text" : "text-muted"
                     }`}
                   >
                     {DAYS[i].label}
@@ -149,7 +149,7 @@ export default function Dashboard() {
             <button
               onClick={() => setMonthOffset((v) => v - 1)}
               aria-label="Previous month"
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-muted transition hover:text-text"
+              className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:text-text"
             >
               ‹
             </button>
@@ -160,7 +160,7 @@ export default function Dashboard() {
               onClick={() => setMonthOffset((v) => Math.min(0, v + 1))}
               disabled={monthOffset >= 0}
               aria-label="Next month"
-              className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-muted transition hover:text-text disabled:opacity-25"
+              className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:text-text disabled:opacity-25"
             >
               ›
             </button>
@@ -275,7 +275,7 @@ export default function Dashboard() {
                 return (
                   <li
                     key={key}
-                    className="flex items-center justify-between rounded-xl border border-line bg-raised px-3 py-2.5"
+                    className="flex items-center justify-between rounded-field bg-raised px-3 py-2.5"
                   >
                     <span className="text-[13px] font-semibold">
                       {d.toLocaleDateString(undefined, {
@@ -287,7 +287,7 @@ export default function Dashboard() {
                     </span>
                     <span
                       className={`font-display text-[12px] font-bold tabular-nums ${
-                        done >= total ? "text-done" : "text-muted"
+                        done >= total ? "text-done-text" : "text-muted"
                       }`}
                     >
                       {done}/{total} done

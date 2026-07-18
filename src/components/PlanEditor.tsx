@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Thumb from "./Thumb";
+import ExerciseDetail from "./ExerciseDetail";
 import ThemeToggle from "./ThemeToggle";
 import Stepper from "./Stepper";
 import ExercisePicker from "./ExercisePicker";
 import { DAYS, GROUPS, tagStyle, toMondayIndex } from "@/lib/groups";
 import { indexById, useLibrary } from "@/lib/library";
 import { usePlan } from "@/lib/store";
+import type { LibraryExercise } from "@/types";
 
 export default function PlanEditor() {
   const { library } = useLibrary();
@@ -16,6 +18,7 @@ export default function PlanEditor() {
 
   const [selected, setSelected] = useState(toMondayIndex(new Date().getDay()));
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [detail, setDetail] = useState<LibraryExercise | null>(null);
 
   const day = getDay(selected);
   const [focusDraft, setFocusDraft] = useState(day.focusLabel);
@@ -35,7 +38,7 @@ export default function PlanEditor() {
       <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
         <div className="flex items-center justify-between gap-2">
           <div className="font-display text-[15px] font-black tracking-[.14em]">
-            PLAN<span className="text-accent">·</span>EDITOR
+            PLAN<span className="text-accent-text">·</span>EDITOR
           </div>
           <ThemeToggle />
         </div>
@@ -56,7 +59,7 @@ export default function PlanEditor() {
               key={d.key}
               onClick={() => setSelected(i)}
               aria-pressed={active}
-              className={`flex-none rounded-[11px] border px-3.5 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
+              className={`flex-none rounded-tile border px-3.5 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
                 active ? "border-text bg-text text-bg" : "border-line bg-surface text-muted"
               }`}
             >
@@ -75,7 +78,7 @@ export default function PlanEditor() {
 
       <div className="flex flex-col gap-3 px-4 pt-2">
         {/* day meta */}
-        <div className="rounded-2xl border border-line bg-surface p-4">
+        <div className="rounded-card bg-surface p-4">
           <label
             htmlFor="focus"
             className="text-[11px] font-bold uppercase tracking-[.1em] text-muted"
@@ -91,14 +94,14 @@ export default function PlanEditor() {
               if (e.key === "Enter") (e.target as HTMLInputElement).blur();
             }}
             placeholder="e.g. Push Day"
-            className="mt-2 w-full rounded-xl border border-line bg-raised px-3.5 py-2.5 text-[15px] font-semibold outline-none focus:border-accent"
+            className="mt-2 w-full rounded-field bg-raised px-3.5 py-2.5 text-[15px] font-semibold outline-none focus:border-accent"
           />
 
           <button
             onClick={() => setDayMeta(selected, { isRestDay: !day.isRestDay })}
             role="switch"
             aria-checked={day.isRestDay}
-            className="mt-3 flex w-full items-center justify-between rounded-xl border border-line bg-raised px-3.5 py-3 text-left"
+            className="mt-3 flex w-full items-center justify-between rounded-field bg-raised px-3.5 py-3 text-left"
           >
             <span className="text-[14px] font-semibold">Rest day</span>
             <span
@@ -130,9 +133,16 @@ export default function PlanEditor() {
             return (
               <div
                 key={item.exerciseId}
-                className="flex items-start gap-3 rounded-2xl border border-line bg-surface p-3"
+                className="rise-in flex items-start gap-3 rounded-card glass p-3"
+                style={{ animationDelay: `${Math.min(i, 6) * 38}ms` }}
               >
-                <Thumb src={ex?.image ?? null} group={group} size={46} />
+                <Thumb
+                  src={ex?.image ?? null}
+                  group={group}
+                  size={46}
+                  onPress={ex ? () => setDetail(ex) : undefined}
+                  pressLabel={ex ? `See how to do ${ex.name}` : undefined}
+                />
 
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[15px] font-bold tracking-[-.01em]">
@@ -140,7 +150,7 @@ export default function PlanEditor() {
                   </div>
                   <span
                     className="mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-                    style={tagStyle(g.color)}
+                    style={tagStyle(g)}
                   >
                     {g.name}
                   </span>
@@ -175,7 +185,7 @@ export default function PlanEditor() {
                     onClick={() => moveItem(selected, i, i - 1)}
                     disabled={i === 0}
                     aria-label="Move up"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-muted transition hover:text-text disabled:opacity-25"
+                    className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:text-text disabled:opacity-25"
                   >
                     ↑
                   </button>
@@ -183,14 +193,14 @@ export default function PlanEditor() {
                     onClick={() => moveItem(selected, i, i + 1)}
                     disabled={i === day.items.length - 1}
                     aria-label="Move down"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-muted transition hover:text-text disabled:opacity-25"
+                    className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:text-text disabled:opacity-25"
                   >
                     ↓
                   </button>
                   <button
                     onClick={() => removeExercise(selected, item.exerciseId)}
                     aria-label={`Remove ${ex?.name ?? "exercise"}`}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-line text-muted transition hover:border-accent hover:text-accent"
+                    className="flex h-7 w-7 items-center justify-center rounded-field border border-line text-muted transition hover:border-accent hover:text-accent-text"
                   >
                     ✕
                   </button>
@@ -201,7 +211,7 @@ export default function PlanEditor() {
 
           <button
             onClick={() => setPickerOpen(true)}
-            className="mt-1 flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
+            className="mt-1 flex items-center justify-center gap-2 rounded-card border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
           >
             <span className="text-lg leading-none">+</span> Add exercise to {DAYS[selected].label}
           </button>
@@ -215,6 +225,8 @@ export default function PlanEditor() {
         existingIds={new Set(day.items.map((i) => i.exerciseId))}
         dayLabel={DAYS[selected].full}
       />
+
+      <ExerciseDetail exercise={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
