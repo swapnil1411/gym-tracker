@@ -111,23 +111,23 @@ export default function WorkoutSlider({
   );
 
   return (
-    <div className="mt-3">
+    <div className="mt-5">
       <div className="mb-1.5 flex items-center justify-between px-0.5">
-        <span className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
+        <span className="text-[11px] font-bold uppercase tracking-[.12em] text-mute">
           {selectedIds.length > 1
             ? `Today · ${selectedIds.length} sessions`
             : "Today's session"}
         </span>
         <div className="flex items-center gap-3">
           {selectedIds.length > 0 && (
-            <button onClick={onClear} className="text-[11px] font-semibold text-muted">
+            <button onClick={onClear} className="text-[11px] font-semibold text-dim">
               Rest day
             </button>
           )}
           {isOverride && (
             <button
               onClick={onResetToUsual}
-              className="text-[11px] font-semibold text-accent-text"
+              className="text-[11px] font-semibold text-accent"
             >
               Reset to usual
             </button>
@@ -160,10 +160,10 @@ export default function WorkoutSlider({
               }
             }
           }}
-          className="no-scrollbar flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto rounded-full outline-none"
+          className="no-scrollbar flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto rounded-2xl outline-none"
         >
           {workouts.length === 0 && (
-            <div className="flex h-[58px] w-full flex-none items-center justify-center rounded-full bg-raised text-[13.5px] font-semibold text-muted">
+            <div className="flex h-[58px] w-full flex-none items-center justify-center rounded-2xl border border-line bg-surface text-[13.5px] font-semibold text-dim">
               No sessions yet — tap +
             </div>
           )}
@@ -176,10 +176,10 @@ export default function WorkoutSlider({
                 role="option"
                 aria-selected={on}
                 onClick={() => onToggle(w.id)}
-                className={`flex h-[58px] w-full flex-none snap-center flex-col items-center justify-center rounded-full transition-all duration-[320ms] ease-smooth ${
+                className={`flex h-[58px] w-full flex-none snap-center flex-col items-center justify-center rounded-2xl border transition-all duration-[320ms] ease-smooth ${
                   on
-                    ? "bg-accent text-on-accent shadow-lift-strong"
-                    : "scale-[.97] bg-raised text-muted"
+                    ? "border-accent bg-accent text-on-accent shadow-lift-strong"
+                    : "scale-[.97] border-line bg-surface text-dim"
                 }`}
               >
                 <span className="flex max-w-full items-center gap-1.5 truncate px-5 text-[17px] font-black tracking-tight">
@@ -198,8 +198,8 @@ export default function WorkoutSlider({
           onClick={() => setCreating((v) => !v)}
           aria-label={creating ? "Cancel" : "Add a session"}
           aria-expanded={creating}
-          className={`press flex w-[58px] flex-none items-center justify-center rounded-full text-[24px] leading-none transition ${
-            creating ? "bg-accent text-on-accent" : "bg-raised text-muted"
+          className={`press flex w-[58px] flex-none items-center justify-center rounded-2xl border text-[24px] leading-none transition ${
+            creating ? "border-accent bg-accent text-on-accent" : "border-line bg-surface text-dim"
           }`}
         >
           {creating ? "×" : "+"}
@@ -228,7 +228,7 @@ export default function WorkoutSlider({
               />
             ))
           ) : (
-            <span className="text-[11px] font-semibold tabular-nums text-muted">
+            <span className="text-[11px] font-semibold tabular-nums text-dim">
               {liveIndex + 1} / {workouts.length}
             </span>
           )}
@@ -236,8 +236,8 @@ export default function WorkoutSlider({
       )}
 
       {creating && (
-        <div className="mt-2 rounded-card bg-raised p-3">
-          <div className="text-[12px] font-semibold text-muted">Add a session</div>
+        <div className="mt-2 rounded-2xl border border-line bg-surface p-3">
+          <div className="text-[12px] font-semibold text-dim">Add a session</div>
 
           {unusedPresets.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -248,7 +248,7 @@ export default function WorkoutSlider({
                     onCreate(p);
                     setCreating(false);
                   }}
-                  className="press rounded-full bg-surface px-3 py-1.5 text-[12.5px] font-semibold"
+                  className="press rounded-full bg-surface2 px-3 py-1.5 text-[12.5px] font-semibold"
                 >
                   {p}
                 </button>
@@ -270,7 +270,7 @@ export default function WorkoutSlider({
               name="name"
               placeholder="Or type your own…"
               autoComplete="off"
-              className="min-w-0 flex-1 rounded-field bg-surface px-3 py-2 text-[14px] outline-none placeholder:text-muted/70"
+              className="min-w-0 flex-1 rounded-field bg-surface2 px-3 py-2 text-[14px] outline-none placeholder:text-mute/70"
             />
             <button
               type="submit"

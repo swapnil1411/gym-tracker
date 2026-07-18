@@ -1,20 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Inter } from "next/font/google";
+import { Space_Grotesk, Hanken_Grotesk } from "next/font/google";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider, themeInitScript } from "@/lib/theme";
 import "./globals.css";
 
-const archivo = Archivo({
+// Display face: headings, numerals, anything that should read as "set in type".
+const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["500", "700", "800", "900"],
-  variable: "--font-archivo",
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
   display: "swap",
 });
 
-const inter = Inter({
+const body = Hanken_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
+  variable: "--font-body",
   display: "swap",
 });
 
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0E1114",
+  themeColor: "#15181e",
   width: "device-width",
   initialScale: 1,
   // Don't trap users who need to zoom; just don't auto-zoom on input focus.
@@ -43,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       data-theme="dark"
       suppressHydrationWarning
-      className={`${archivo.variable} ${inter.variable}`}
+      className={`${display.variable} ${body.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

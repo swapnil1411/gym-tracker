@@ -25,9 +25,8 @@ export default function Home() {
   if (!user) return <AuthScreen />;
 
   return (
-    <div className="relative flex w-full max-w-app flex-col overflow-x-hidden">
-      {/* pb-24 keeps the last card clear of the fixed bottom nav */}
-      <main className="flex min-h-dvh flex-col pb-24">
+    <div className="app-chrome relative flex h-dvh w-full max-w-app flex-col overflow-hidden pt-5 sm:my-6 sm:h-[812px] sm:rounded-[42px] sm:pt-7">
+      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {tab === "today" && <DailyTracker onOpenPlan={() => setTab("plan")} />}
         {tab === "plan" && <PlanEditor onBack={() => setTab("today")} />}
         {tab === "stats" && <Dashboard />}

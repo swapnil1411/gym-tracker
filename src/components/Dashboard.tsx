@@ -26,11 +26,20 @@ const Card = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <section className="rounded-card bg-surface p-4">
-    <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">{title}</h2>
+  <section className="rounded-[18px] border border-line bg-surface p-4">
+    <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-mute">{title}</h2>
     <div className="mt-3">{children}</div>
   </section>
 );
+
+function weeklyTonnageSeries(today: Date, tonnageFor: (dates: Date[]) => number) {
+  return Array.from({ length: 8 }, (_, i) => {
+    const end = new Date(today);
+    end.setDate(end.getDate() - (7 - i) * 7);
+    const dates = weekDates(end);
+    return tonnageFor(dates);
+  });
+}
 
 export default function Dashboard() {
   const { library } = useLibrary();
@@ -87,6 +96,23 @@ export default function Dashboard() {
   const cells = useMemo(() => monthGrid(month), [month]);
   const volume = useMemo(() => volumeByGroup(thisWeek, days, byId), [thisWeek, days, byId]);
   const weekTonnage = useMemo(() => tonnage(thisWeek, days), [thisWeek, days]);
+  const volumeSeries = useMemo(
+    () => weeklyTonnageSeries(today, (dates) => tonnage(dates, days)),
+    [today, days]
+  );
+  const seriesMax = Math.max(1, ...volumeSeries);
+  const seriesMin = Math.min(...volumeSeries);
+  const range = Math.max(1, seriesMax - seriesMin);
+  const chartPoints = volumeSeries.map((v, i) => {
+    const x = (i / Math.max(1, volumeSeries.length - 1)) * 322;
+    const y = 114 - ((v - seriesMin) / range) * 92;
+    return `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`;
+  });
+  const areaPath = `M0,128 ${chartPoints.map((p) => `L${p}`).join(" ")} L322,128 Z`;
+  const previous = volumeSeries[volumeSeries.length - 2] ?? 0;
+  const latest = volumeSeries[volumeSeries.length - 1] ?? 0;
+  const trend =
+    previous > 0 ? Math.round(((latest - previous) / previous) * 100) : latest > 0 ? 100 : 0;
   const maxVolume = Math.max(1, ...Object.values(volume));
   const volumeEntries = Object.entries(volume)
     .filter(([, v]) => v > 0)
@@ -104,44 +130,69 @@ export default function Dashboard() {
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
+      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-display text-[15px] font-black tracking-[.14em]">
-            YOUR<span className="text-accent-text">·</span>PROGRESS
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-[.12em] text-accent">
+              Your · Progress
+            </div>
+            <h1 className="mt-1 font-display text-[28px] font-bold tracking-[-.02em]">
+              Dashboard
+            </h1>
           </div>
           <ThemeToggle />
         </div>
-        <h1 className="mt-3 font-display text-[clamp(24px,7vw,30px)] font-black uppercase leading-[.95] tracking-tight">
-          Dashboard
-        </h1>
       </header>
 
-      <div className="flex flex-col gap-3 px-4 py-4">
+      <div className="flex flex-col gap-3 px-5 py-4">
         {/* ------------------------------- streaks ------------------------------- */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-card bg-surface p-4">
-            <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
+          <div className="rounded-[18px] border border-line bg-surface p-4">
+            <div className="text-[10.5px] font-bold uppercase tracking-[.08em] text-mute">
               Current streak
             </div>
-            <div className="mt-2 font-display text-[34px] font-black leading-none text-accent-text">
+            <div className="mt-2 font-display text-[34px] font-bold leading-none text-accent">
               {streak}
-              <span className="ml-1 text-[13px] font-semibold text-muted">
+              <span className="ml-1 text-[13px] font-semibold text-dim">
                 {streak === 1 ? "day" : "days"}
               </span>
             </div>
           </div>
-          <div className="rounded-card bg-surface p-4">
-            <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
+          <div className="rounded-[18px] border border-line bg-surface p-4">
+            <div className="text-[10.5px] font-bold uppercase tracking-[.08em] text-mute">
               Longest streak
             </div>
-            <div className="mt-2 font-display text-[34px] font-black leading-none text-done-text">
+            <div className="mt-2 font-display text-[34px] font-bold leading-none text-success">
               {best}
-              <span className="ml-1 text-[13px] font-semibold text-muted">
+              <span className="ml-1 text-[13px] font-semibold text-dim">
                 {best === 1 ? "day" : "days"}
               </span>
             </div>
           </div>
         </div>
+
+        <Card title="Volume · Last 8 weeks">
+          <div className="mb-2 flex justify-end">
+            <span className={`text-[12px] font-bold ${trend >= 0 ? "text-success" : "text-pr"}`}>
+              {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
+            </span>
+          </div>
+          <svg width="100%" height="128" viewBox="0 0 322 128" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="rgb(var(--accent))" stopOpacity="0.35" />
+                <stop offset="1" stopColor="rgb(var(--accent))" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <line x1="0" y1="30" x2="322" y2="30" stroke="rgb(var(--border))" strokeWidth="1" strokeDasharray="3 5" />
+            <line x1="0" y1="70" x2="322" y2="70" stroke="rgb(var(--border))" strokeWidth="1" strokeDasharray="3 5" />
+            <path d={areaPath} fill="url(#volGrad)" />
+            <polyline points={chartPoints.join(" ")} fill="none" stroke="rgb(var(--accent))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div className="mt-1 flex justify-between text-[10px] font-semibold text-mute">
+            <span>W1</span><span>W3</span><span>W5</span><span>W7</span><span>Now</span>
+          </div>
+        </Card>
 
         {/* ------------------------------ this week ------------------------------ */}
         <Card title="This week">

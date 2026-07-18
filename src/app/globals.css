@@ -11,100 +11,96 @@
  * Tokens are raw "R G B" channel triplets, not hex, so Tailwind can do
  * bg-surface/60 and text-muted/70 against them (see tailwind.config.ts).
  */
+/*
+ * Palette imported from the "Gym Tracker Mobile Design" project
+ * (claude.ai/design — GymLog Mobile.dc.html). Values are taken verbatim from
+ * that file's dark/light token maps so the app and the design stay one system.
+ *
+ * The surface ramp is bg → surface → surface2 → surface3, with a visible
+ * border on cards. That is a different structure from the borderless/glass
+ * approach this app used before: definition comes from the 1px stroke, so the
+ * steps between surfaces are smaller and the border does the separating.
+ *
+ * Tokens are raw "R G B" triplets, not hex, so Tailwind can do bg-surface/60
+ * and text-dim/70 against them (see tailwind.config.ts).
+ */
 :root,
 [data-theme="dark"] {
-  /*
-   * Cards carry no border, so the surface ramp has to do that work on its own
-   * — hence the wider spacing between these than a bordered design needs.
-   */
-  --bg: 17 17 19; /* slate 1 */
-  --surface: 33 34 37; /* slate 3 */
-  --raised: 46 49 53; /* slate 5 — sits inside surface */
-  --line: 54 58 63; /* slate 6 — dividers only now, not card outlines */
-  /* Dark UIs get depth from lightness, not shadow: shadows vanish on near-black. */
-  --lift: 0 0 0 1px rgb(0 0 0 / 0.4);
-  --lift-strong: 0 1px 2px rgb(0 0 0 / 0.5);
-  --text: 237 238 240; /* slate 12 */
-  --muted: 176 180 186; /* slate 11 — guaranteed 4.5:1, unlike a dimmed grey */
+  --bg: 21 24 30; /* #15181e */
+  --surface: 28 32 41; /* #1c2029 */
+  --surface2: 36 41 53; /* #242935 */
+  --surface3: 44 49 61; /* #2c313d */
+  --border: 47 53 66; /* #2f3542 */
+  --text: 243 245 248; /* #f3f5f8 */
+  --dim: 162 171 187; /* #a2abbb */
+  --mute: 107 115 133; /* #6b7385 */
 
-  /*
-   * Step 9 is the solid fill and is *identical* in both themes; step 11 is the
-   * shade that stays legible as text. Using 9 for text is what made the old
-   * accent look cheap — it was never meant to be read against the page.
-   */
-  --accent: 91 91 214; /* iris 9 */
-  --accent-text: 177 169 255; /* iris 11 */
+  --accent: 78 120 220; /* one notch softer than #5b8cff */
+  --accent2: 39 52 82;
+  --accent-ghost: 25 33 49;
   --on-accent: 255 255 255;
-  --done: 41 163 131; /* jade 9 */
-  --done-text: 31 216 164; /* jade 11 */
-  /* jade 9 is one of Radix's light solids: white on it is only 3.1:1, so the
-     ink on a done fill is dark (jade 12) rather than white. */
-  --on-done: 13 21 18;
 
-  /* header wash + the tinted background of a completed card */
-  --header-top: 24 25 27;
-  --card-done: 18 28 24; /* jade 2 */
-  --heat-empty: 33 34 37;
-  --nav-bg: 17 17 19 / 0.92;
+  --success: 48 187 126;
+  --success2: 20 51 40;
+  --on-success: 255 255 255;
 
-  --tag-alpha: 0.18;
+  /* Personal-record gold, reserved for PR callouts — never a general accent. */
+  --pr: 210 160 68;
+  --pr2: 36 31 17;
 
-  /* Glass. Dark mode tolerates a stronger tint and a brighter specular edge:
-     the highlight is what separates "glass" from "translucent grey". */
-  --glass-tint: 62%;
-  --glass-edge: rgb(255 255 255 / 0.1);
-  --glass-sheen: rgb(255 255 255 / 0.055);
-  --bloom-a: 0.16;
-  --bloom-b: 0.09;
+  /* Back-compat aliases for components that still use the original role names. */
+  --raised: var(--surface2);
+  --line: var(--border);
+  --muted: var(--dim);
+  --done: var(--success);
+  --done-text: var(--success);
+  --on-done: var(--on-success);
+  --accent-text: var(--accent);
+  --header-top: 24 28 36;
+  --card-done: var(--success2);
+  --heat-empty: var(--surface2);
+  --tag-alpha: 0.14;
+  --lift: 0 10px 24px -18px rgba(0, 0, 0, 0.7);
+  --lift-strong: 0 14px 30px -12px rgb(var(--accent) / 0.42);
 
   color-scheme: dark;
 }
 
-/*
- * Light mode is not the dark tokens flipped, but the *ordering* of the surface
- * ramp has to hold in both: bg < surface < raised in perceived elevation.
- * Getting that backwards (raised lighter than a white surface) is what made
- * list rows inside a sheet invisible against it.
- *
- * Depth here comes from shadow, which is the opposite of dark mode — hence
- * --lift carrying real shadows on this side and near-nothing on the other.
- */
 [data-theme="light"] {
-  --bg: 242 242 246; /* page reads clearly below the white cards on it */
+  --bg: 244 246 250; /* #f4f6fa */
   --surface: 255 255 255;
-  --raised: 232 232 236; /* slate 4 — reads as inset without needing a border */
-  --line: 220 221 228; /* slate 6/7 — dividers only */
-  --text: 28 32 36; /* slate 12 */
-  --muted: 96 100 108; /* slate 11 */
+  --surface2: 238 241 246; /* #eef1f6 */
+  --surface3: 226 231 240; /* #e2e7f0 */
+  --border: 226 231 240; /* #e2e7f0 */
+  --text: 26 32 48; /* #1a2030 */
+  --dim: 90 100 120; /* #5a6478 */
+  --mute: 138 147 166; /* #8a93a6 */
 
-  /*
-   * Step 9, not the deeper step 10 I had here: white text needs a luminous
-   * fill under it to feel crisp. A darker violet just made the button muddy.
-   */
-  --accent: 91 91 214; /* iris 9 */
-  --accent-text: 87 83 198; /* iris 11 */
+  --accent: 61 99 221; /* #3d63dd */
+  --accent2: 196 209 247; /* #c4d1f7 */
+  --accent-ghost: 238 242 253; /* #eef2fd */
   --on-accent: 255 255 255;
-  --done: 41 163 131; /* jade 9 */
-  --done-text: 32 131 104; /* jade 11 */
-  --on-done: 13 21 18; /* see the dark block */
 
-  --lift: 0 1px 2px rgb(20 22 40 / 0.06), 0 1px 1px rgb(20 22 40 / 0.04);
-  --lift-strong: 0 2px 4px rgb(63 63 140 / 0.18), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  --success: 26 157 106; /* #1a9d6a */
+  --success2: 223 243 233; /* #dff3e9 */
+  --on-success: 255 255 255;
 
+  --pr: 200 138 26; /* #c88a1a */
+  --pr2: 248 239 219; /* #f8efdb */
+
+  --raised: var(--surface2);
+  --line: var(--border);
+  --muted: var(--dim);
+  --done: var(--success);
+  --done-text: var(--success);
+  --on-done: var(--on-success);
+  --accent-text: var(--accent);
   --header-top: 255 255 255;
-  --card-done: 230 247 237; /* jade 3 */
-  --heat-empty: 224 225 230; /* slate 5 */
-  --nav-bg: 255 255 255 / 0.92;
-
+  --card-done: var(--success2);
+  --heat-empty: var(--surface2);
   --tag-alpha: 0.16;
-
-  /* Light glass must stay closer to opaque — dark text over a blurred backdrop
-     loses contrast fast, and there is no headroom above white to add sheen. */
-  --glass-tint: 76%;
-  --glass-edge: rgb(255 255 255 / 0.65);
-  --glass-sheen: rgb(255 255 255 / 0.4);
-  --bloom-a: 0.1;
-  --bloom-b: 0.06;
+  --lift: 0 12px 28px -20px rgba(26, 32, 48, 0.35);
+  --lift-strong: 0 14px 30px -14px rgb(var(--accent) / 0.45);
 
   color-scheme: light;
 }
@@ -120,36 +116,23 @@ body {
   color: rgb(var(--text));
 }
 
-/*
- * Ambient wash behind everything.
- *
- * Frosted glass is only legible as glass when there is something behind it to
- * blur — over a flat fill it just reads as slightly grey plastic. These two
- * very soft accent blooms are what the cards actually refract. They are fixed
- * rather than scrolling, so the glass shifts against them as the list moves,
- * which is what sells the depth.
- */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
-  pointer-events: none;
   background:
-    radial-gradient(
-      68vw 42vh at 12% -6%,
-      rgb(var(--accent) / var(--bloom-a)),
-      transparent 62%
-    ),
-    radial-gradient(
-      52vw 38vh at 92% 8%,
-      rgb(var(--done) / var(--bloom-b)),
-      transparent 60%
-    );
+    radial-gradient(120% 90% at 50% 0%, rgb(var(--surface3)) 0%, rgb(var(--bg)) 60%, rgb(16 18 22) 100%);
+  pointer-events: none;
+}
+
+[data-theme="light"] body::before {
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgb(255 255 255) 0%, rgb(var(--bg)) 58%, rgb(var(--surface3)) 100%);
 }
 
 body {
-  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   display: flex;
   justify-content: center;
   /* dvh, not vh: mobile browser chrome shrinks the viewport and vh doesn't follow */
@@ -186,51 +169,29 @@ textarea {
 }
 
 /*
- * Frosted-glass surface.
- *
- * Three layers, and all three are load-bearing:
- *   1. a partly-transparent tint, so the bloom behind shows through;
- *   2. backdrop blur *plus saturation* — the saturation boost is what makes it
- *      read as glass rather than fog, since real glass concentrates colour;
- *   3. a specular edge: a bright hairline along the top, dimmer at the bottom.
- *      This is the single most important part. Without it you have translucent
- *      plastic. Light catching an edge is what the eye reads as a solid pane.
+ * Card surface, from the imported design: a solid fill with a 1px stroke.
+ * Definition comes from the border, so no blur and no elevation ramp — which
+ * also means it costs nothing to scroll a long list of them on a phone.
  */
-.glass {
-  background: color-mix(in srgb, rgb(var(--surface)) var(--glass-tint), transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    inset 0 0 0 1px var(--glass-sheen),
-    var(--lift);
-}
-
-/*
- * Safari/Chrome will happily paint a *scrolling* backdrop-filter at reduced
- * quality; keeping the blur radius modest and the layer promoted avoids the
- * repaint stutter that makes glass lists feel cheap on mid-range Android.
- */
-/*
- * Opaque sibling of .glass, for surfaces sitting over the modal scrim.
- * A translucent sheet would blur `black/60` and come out muddy — in light mode
- * catastrophically so. It keeps the specular edge, which is what carries the
- * "island" look; the transparency was never the part doing that work.
- */
-.pane {
+.card {
   background: rgb(var(--surface));
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    inset 0 0 0 1px var(--glass-sheen),
-    var(--lift-strong);
+  border: 1px solid rgb(var(--border));
 }
 
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  /* No blur support: fall back to an opaque surface rather than a washed-out
-     card with unreadable text over the bloom. */
-  .glass {
-    background: rgb(var(--surface));
-  }
+.card-2 {
+  background: rgb(var(--surface2));
+}
+
+.glass {
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--border));
+}
+
+.app-chrome {
+  background: rgb(var(--bg));
+  box-shadow:
+    0 40px 90px -20px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgb(var(--border));
 }
 
 /*

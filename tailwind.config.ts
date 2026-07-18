@@ -24,6 +24,16 @@ const config: Config = {
         "on-done": "rgb(var(--on-done) / <alpha-value>)",
         "header-top": "rgb(var(--header-top) / <alpha-value>)",
         "card-done": "rgb(var(--card-done) / <alpha-value>)",
+        dim: "rgb(var(--dim) / <alpha-value>)",
+        mute: "rgb(var(--mute) / <alpha-value>)",
+        border: "rgb(var(--border) / <alpha-value>)",
+        surface2: "rgb(var(--surface2) / <alpha-value>)",
+        surface3: "rgb(var(--surface3) / <alpha-value>)",
+        "accent-ghost": "rgb(var(--accent-ghost) / <alpha-value>)",
+        success: "rgb(var(--success) / <alpha-value>)",
+        success2: "rgb(var(--success2) / <alpha-value>)",
+        pr: "rgb(var(--pr) / <alpha-value>)",
+        pr2: "rgb(var(--pr2) / <alpha-value>)",
       },
       // Depth is theme-dependent: shadows in light, borders in dark. Both live
       // behind one token so components never branch on theme.
@@ -45,8 +55,8 @@ const config: Config = {
         smooth: "cubic-bezier(0.2, 0, 0, 1)",
       },
       fontFamily: {
-        display: ["var(--font-archivo)", "system-ui", "sans-serif"],
-        body: ["var(--font-inter)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
+        body: ["var(--font-body)", "system-ui", "sans-serif"],
       },
       maxWidth: {
         app: "460px",

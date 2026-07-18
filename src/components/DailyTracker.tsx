@@ -74,6 +74,22 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
 
   const doneCount = allItems.filter((i) => entries[i.exerciseId]?.done).length;
   const isFuture = selectedDate > new Date() && key !== dateKey(new Date());
+  const totalSets = allItems.reduce((sum, item) => sum + item.sets, 0);
+  const nextOpen = sessions
+    .flatMap((w) => w.items.map((item) => ({ workoutId: w.id, item })))
+    .find(({ item }) => !entries[item.exerciseId]?.done);
+  const estimatedMinutes = Math.max(15, Math.round((totalSets * 3.5) / 5) * 5);
+  const prTarget = sessions
+    .flatMap((w) => w.items.map((item) => ({ workoutId: w.id, item, ex: byId.get(item.exerciseId) })))
+    .map((row) => {
+      const h = history.get(row.item.exerciseId);
+      const logged = entries[row.item.exerciseId];
+      const todayKg = logged?.done ? logged.weightKg ?? row.item.weightKg : row.item.weightKg;
+      const previousBest = h?.bestKg ?? 0;
+      return { ...row, h, todayKg, previousBest };
+    })
+    .filter((row) => row.ex && row.previousBest > 0 && row.todayKg >= row.previousBest)
+    .sort((a, b) => b.todayKg - a.todayKg)[0];
 
   // Renaming inline only makes sense when there's exactly one session to rename.
   const soleSession = sessions.length === 1 ? sessions[0] : null;
@@ -106,10 +122,20 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
   return (
     <div className="flex w-full max-w-app flex-col">
       {/* ---------------------------------- header --------------------------------- */}
-      <header className="pt-safe border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
+      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-display text-[15px] font-black tracking-[.14em]">
-            GYM<span className="text-accent-text">·</span>LOG
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-accent text-on-accent">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M6.5 7v10M17.5 7v10M6.5 12h11M4 9.5v5M20 9.5v5"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="font-display text-[16px] font-bold tracking-[.09em]">GYMLOG</div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -117,7 +143,7 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
               onClick={onOpenPlan}
               aria-label="Sessions and weekly rhythm"
               title="Sessions & week"
-              className="press flex h-10 w-10 items-center justify-center rounded-field bg-surface text-[15px] text-muted"
+              className="press flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-[15px] text-dim"
             >
               🗓
             </button>
@@ -125,70 +151,114 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
               onClick={logOut}
               aria-label="Log out"
               title="Log out"
-              className="press flex h-10 w-10 items-center justify-center rounded-field bg-surface text-muted"
+              className="press flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-dim"
             >
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
               </svg>
             </button>
-            <ProgressRing done={doneCount} total={allItems.length} size={58} />
           </div>
         </div>
 
-        <div className="mt-3">
-          {nameEditing && soleSession ? (
-            <input
-              autoFocus
-              value={nameDraft}
-              onChange={(e) => setNameDraft(e.target.value)}
-              onBlur={commitName}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                if (e.key === "Escape") {
-                  setNameDraft(soleSession.name);
-                  setNameEditing(false);
-                }
-              }}
-              aria-label="Rename this session"
-              className="w-full rounded-field border border-accent bg-raised px-2.5 py-1.5 font-display text-[26px] font-black uppercase tracking-tight text-text outline-none"
-            />
-          ) : (
-            <button
-              onClick={() => soleSession && setNameEditing(true)}
-              disabled={!soleSession}
-              className="group flex items-center gap-2 text-left"
-              aria-label={soleSession ? `Rename ${soleSession.name}` : undefined}
-            >
-              <span
-                // Re-keyed so the name crossfades when the day changes rather
-                // than swapping between frames.
-                key={title}
-                className="rise-in font-display text-[clamp(24px,7.5vw,32px)] font-black uppercase leading-[.95] tracking-tight"
+        <div className="mt-5 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            {nameEditing && soleSession ? (
+              <input
+                autoFocus
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onBlur={commitName}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") {
+                    setNameDraft(soleSession.name);
+                    setNameEditing(false);
+                  }
+                }}
+                aria-label="Rename this session"
+                className="w-full rounded-field border border-accent bg-surface2 px-2.5 py-1.5 font-display text-[28px] font-bold tracking-[-.02em] text-text outline-none"
+              />
+            ) : (
+              <button
+                onClick={() => soleSession && setNameEditing(true)}
+                disabled={!soleSession}
+                className="group flex items-center gap-2 text-left"
+                aria-label={soleSession ? `Rename ${soleSession.name}` : undefined}
               >
-                {title}
-              </span>
-              {soleSession && (
-                <svg
-                  width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round"
-                  className="flex-none opacity-40 transition group-hover:opacity-100"
-                  aria-hidden="true"
+                <span
+                  key={title}
+                  className="rise-in font-display text-[clamp(28px,8vw,34px)] font-bold leading-[1.05] tracking-[-.02em]"
                 >
-                  <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-                </svg>
-              )}
-            </button>
-          )}
-
-          <div className="mt-1.5 text-[13px] font-medium tracking-[.02em] text-muted">
-            {DAYS[selected].full}
-            {selected !== todayIdx && (
-              <>
-                {" · "}
-                {selectedDate.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
-              </>
+                  {title}
+                </span>
+                {soleSession && (
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mt-1 flex-none text-mute transition group-hover:text-dim"
+                    aria-hidden="true"
+                  >
+                    <path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z" />
+                  </svg>
+                )}
+              </button>
             )}
-            {isOverride && <span className="ml-1.5">· just this day</span>}
+
+            <div className="mt-1.5 text-[14px] font-medium tracking-[.01em] text-dim">
+              {DAYS[selected].full}
+              {" · "}
+              {selectedDate.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
+              {selected === todayIdx && " · today"}
+              {isOverride && <span className="ml-1.5">· today only</span>}
+            </div>
+          </div>
+          <ProgressRing done={doneCount} total={allItems.length} size={58} />
+        </div>
+
+        <div className="mt-5 rounded-[22px] bg-accent p-5 text-on-accent shadow-lift-strong">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold uppercase tracking-[.12em] text-white/75">
+                Today&apos;s session
+              </div>
+              <div className="mt-1 truncate font-display text-[23px] font-bold">
+                {title}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (nextOpen) setLogTarget({ w: nextOpen.workoutId, ex: nextOpen.item.exerciseId });
+              }}
+              disabled={!nextOpen || isFuture}
+              aria-label="Start next exercise"
+              className="press flex h-[52px] w-[52px] flex-none items-center justify-center rounded-2xl bg-white/20 text-white disabled:opacity-35"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
+          </div>
+          <div className="mt-4 flex gap-5">
+            <div>
+              <div className="font-display text-[18px] font-bold">{allItems.length}</div>
+              <div className="text-[11px] font-medium text-white/70">exercises</div>
+            </div>
+            <div className="w-px bg-white/20" />
+            <div>
+              <div className="font-display text-[18px] font-bold">{totalSets}</div>
+              <div className="text-[11px] font-medium text-white/70">sets</div>
+            </div>
+            <div className="w-px bg-white/20" />
+            <div>
+              <div className="font-display text-[18px] font-bold">~{estimatedMinutes}</div>
+              <div className="text-[11px] font-medium text-white/70">min</div>
+            </div>
           </div>
         </div>
 
@@ -204,7 +274,7 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
       </header>
 
       {/* --------------------------------- day pills -------------------------------- */}
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1.5 pt-3.5 sm:px-5">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1.5 pt-4">
         {DAYS.map((d, i) => {
           const dd = new Date();
           dd.setDate(dd.getDate() + (i - todayIdx));
@@ -220,20 +290,20 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
                 setEditing(false);
               }}
               aria-pressed={active}
-              className={`relative min-w-[54px] flex-none rounded-tile border px-3 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
-                active ? "border-text bg-text text-bg" : "border-line bg-surface text-muted"
+              className={`relative min-w-[104px] flex-none rounded-[14px] border px-3.5 py-3 text-left font-display text-[13px] font-bold tracking-[.04em] transition ${
+                active ? "border-accent bg-accent-ghost text-accent" : "border-line bg-surface text-text"
               }`}
             >
               {d.label}
               <small
-                className={`mt-0.5 block max-w-[62px] truncate font-body text-[9px] font-semibold capitalize tracking-[.02em] ${
-                  active ? "text-bg/60" : "text-muted"
+                className={`mt-1 block max-w-[78px] truncate font-body text-[11px] font-medium capitalize tracking-normal ${
+                  active ? "text-accent" : "text-mute"
                 }`}
               >
                 {label}
               </small>
               {i === todayIdx && (
-                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-bg bg-accent" />
+                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-bg bg-success" />
               )}
             </button>
           );
@@ -241,7 +311,7 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
       </div>
 
       {sessions.length > 0 && (
-        <div className="flex gap-2 px-4 sm:px-5">
+        <div className="flex gap-2 px-5">
           <button
             onClick={() => setEditing((v) => !v)}
             className={`py-1.5 text-[12.5px] font-semibold transition ${
@@ -254,7 +324,7 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
       )}
 
       {/* ----------------------------------- list ---------------------------------- */}
-      <div className="flex flex-1 flex-col gap-2.5 px-4 pb-4 pt-2.5">
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-4 pt-2.5">
         {(loading || schedLoading) && (
           <p className="py-10 text-center text-sm text-muted">Loading your sessions…</p>
         )}
@@ -325,8 +395,8 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
                       setLogTarget({ w: w.id, ex: item.exerciseId });
                     }
                   }}
-                  className={`rise-in relative flex items-center gap-3 overflow-hidden rounded-card p-3 ${
-                    isDone ? "bg-card-done/80 backdrop-blur-xl" : "glass"
+                  className={`rise-in relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3.5 ${
+                    isDone ? "border-success bg-success2" : "border-line bg-surface"
                   } ${editing ? "" : "cursor-pointer press press-card"}`}
                 >
                   <div
@@ -344,15 +414,15 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
 
                   <div className="min-w-0 flex-1">
                     <div
-                      className={`truncate text-[15.5px] font-bold tracking-[-.01em] transition ${
-                        isDone ? "text-muted line-through decoration-done" : ""
+                      className={`truncate text-[15.5px] font-semibold tracking-[-.01em] transition ${
+                        isDone ? "text-dim line-through decoration-success" : ""
                       }`}
                     >
                       {ex?.name ?? "Unknown exercise"}
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <span
-                        className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+                        className="rounded-md bg-surface2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
                         style={tagStyle(g)}
                       >
                         {g.name}
@@ -385,7 +455,7 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
                           />
                         </div>
                       ) : (
-                        <span className="text-[12px] font-medium text-muted">
+                        <span className="text-[12.5px] font-semibold text-dim">
                           {shownSets} × {shownReps}
                           {shownKg > 0 && (
                             <>
@@ -401,9 +471,9 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
 
                     {/* What you managed last time you did this move. */}
                     {!editing && h && h.lastOn && h.lastKg > 0 && (
-                      <div className="mt-1 text-[11px] text-muted">
+                      <div className="mt-1 text-[11.5px] text-mute">
                         Last time{" "}
-                        <b className="font-semibold text-text">{formatKg(h.lastKg)}kg</b>
+                        <b className="font-semibold text-dim">{formatKg(h.lastKg)}kg</b>
                         {" · "}
                         {formatDayLabel(h.lastOn)}
                         {h.bestKg > h.lastKg && <> · best {formatKg(h.bestKg)}kg</>}
@@ -420,8 +490,8 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
                       disabled={isFuture}
                       aria-pressed={isDone}
                       aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
-                      className={`press flex h-9 w-9 flex-none items-center justify-center rounded-field border-2 disabled:opacity-30 ${
-                        isDone ? "border-done bg-done" : "border-line bg-transparent"
+                      className={`press flex h-8 w-8 flex-none items-center justify-center rounded-[9px] border-2 disabled:opacity-30 ${
+                        isDone ? "border-success bg-success" : "border-surface3 bg-transparent"
                       }`}
                     >
                       <svg
@@ -472,12 +542,38 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
 
             <button
               onClick={() => setPickerFor(w.id)}
-              className="mt-1 flex items-center justify-center gap-2 rounded-card border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-muted transition hover:border-accent hover:text-text"
+              className="mt-1 flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-line py-[15px] text-sm font-semibold text-dim transition hover:border-accent hover:text-text"
             >
               <span className="text-lg leading-none">+</span> Add exercise to {w.name}
             </button>
           </div>
         ))}
+
+        {prTarget?.ex && (
+          <button
+            onClick={() => setLogTarget({ w: prTarget.workoutId, ex: prTarget.item.exerciseId })}
+            className="press flex items-center gap-3 rounded-2xl border border-pr/25 bg-pr2 px-4 py-3.5 text-left"
+          >
+            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-[11px] bg-pr text-[#1c1206]">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4zM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"
+                  stroke="currentColor"
+                  strokeWidth={1.7}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-bold text-pr">PR record ready</div>
+              <div className="mt-0.5 truncate text-[12.5px] font-medium text-dim">
+                {prTarget.ex.name} · best {formatKg(prTarget.previousBest)}kg
+                {prTarget.h?.bestOn ? ` · ${formatDayLabel(prTarget.h.bestOn)}` : ""}
+              </div>
+            </div>
+          </button>
+        )}
       </div>
 
       <ExercisePicker

@@ -59,7 +59,7 @@ export default function PlanEditor({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
+      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
         <div className="flex items-center justify-between gap-2">
           <button
             onClick={onBack}
