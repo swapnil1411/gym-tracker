@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Thumb from "./Thumb";
+import ThemeToggle from "./ThemeToggle";
 import Stepper from "./Stepper";
 import ExercisePicker from "./ExercisePicker";
-import { DAYS, GROUPS, hexA, toMondayIndex } from "@/lib/groups";
+import { DAYS, GROUPS, tagStyle, toMondayIndex } from "@/lib/groups";
 import { indexById, useLibrary } from "@/lib/library";
 import { usePlan } from "@/lib/store";
 
@@ -31,11 +32,14 @@ export default function PlanEditor() {
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-gradient-to-b from-[#12171C] to-bg px-5 pb-4 pt-[22px]">
-        <div className="font-display text-[15px] font-black tracking-[.14em]">
-          PLAN<span className="text-accent">·</span>EDITOR
+      <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-display text-[15px] font-black tracking-[.14em]">
+            PLAN<span className="text-accent">·</span>EDITOR
+          </div>
+          <ThemeToggle />
         </div>
-        <h1 className="mt-3 font-display text-[30px] font-black uppercase leading-[.95] tracking-tight">
+        <h1 className="mt-3 font-display text-[clamp(24px,7vw,30px)] font-black uppercase leading-[.95] tracking-tight">
           Weekly split
         </h1>
         <p className="mt-1.5 text-[13px] text-muted">
@@ -43,7 +47,7 @@ export default function PlanEditor() {
         </p>
       </header>
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-2 pt-3.5">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2 pt-3.5 sm:px-5">
         {DAYS.map((d, i) => {
           const dd = getDay(i);
           const active = i === selected;
@@ -53,13 +57,13 @@ export default function PlanEditor() {
               onClick={() => setSelected(i)}
               aria-pressed={active}
               className={`flex-none rounded-[11px] border px-3.5 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
-                active ? "border-text bg-text text-[#101418]" : "border-line bg-surface text-muted"
+                active ? "border-text bg-text text-bg" : "border-line bg-surface text-muted"
               }`}
             >
               {d.label}
               <small
                 className={`mt-0.5 block font-body text-[9px] font-semibold capitalize tracking-[.02em] ${
-                  active ? "text-[#5a636c]" : "text-muted"
+                  active ? "text-bg/60" : "text-muted"
                 }`}
               >
                 {dd.isRestDay ? "rest" : `${dd.items.length} moves`}
@@ -136,7 +140,7 @@ export default function PlanEditor() {
                   </div>
                   <span
                     className="mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-                    style={{ background: hexA(g.color, 0.16), color: g.color }}
+                    style={tagStyle(g.color)}
                   >
                     {g.name}
                   </span>

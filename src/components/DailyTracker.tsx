@@ -1,25 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
 import Thumb from "./Thumb";
 import Stepper from "./Stepper";
 import ExercisePicker from "./ExercisePicker";
-import { DAYS, GROUPS, dateKey, hexA, toMondayIndex } from "@/lib/groups";
+import LogSheet from "./LogSheet";
+import ThemeToggle from "./ThemeToggle";
+import { DAYS, GROUPS, dateKey, tagStyle, toMondayIndex } from "@/lib/groups";
 import { indexById, useLibrary } from "@/lib/library";
 import { useDayCompletions, usePlan } from "@/lib/store";
+import { useExerciseHistory, formatKg } from "@/lib/history";
 import { useAuth } from "@/lib/auth-context";
 
 export default function DailyTracker() {
   const { logOut } = useAuth();
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
-  const { getDay, addExercise, removeExercise, updateItem, loading } = usePlan();
+  const { getDay, addExercise, removeExercise, updateItem, setDayMeta, loading } = usePlan();
+  const { history } = useExerciseHistory();
 
   const todayIdx = toMondayIndex(new Date().getDay());
   const [selected, setSelected] = useState(todayIdx);
   const [editing, setEditing] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [logId, setLogId] = useState<string | null>(null);
+  const [focusEditing, setFocusEditing] = useState(false);
+  const [focusDraft, setFocusDraft] = useState("");
 
   const day = getDay(selected);
 
@@ -32,43 +39,102 @@ export default function DailyTracker() {
   }, [selected, todayIdx]);
 
   const key = dateKey(selectedDate);
-  const { entries, toggle } = useDayCompletions(key);
+  const { entries, toggle, setCompletion } = useDayCompletions(key);
 
   const doneCount = day.items.filter((i) => entries[i.exerciseId]?.done).length;
   const isFuture = selectedDate > new Date() && key !== dateKey(new Date());
 
+  // Keep the inline focus field in step with the day being viewed.
+  useEffect(() => {
+    setFocusDraft(day.focusLabel);
+    setFocusEditing(false);
+  }, [selected, day.focusLabel]);
+
+  const commitFocus = () => {
+    const next = focusDraft.trim();
+    if (next && next !== day.focusLabel) setDayMeta(selected, { focusLabel: next });
+    else setFocusDraft(day.focusLabel);
+    setFocusEditing(false);
+  };
+
+  const logItem = logId ? day.items.find((i) => i.exerciseId === logId) ?? null : null;
+
   return (
     <div className="flex w-full max-w-app flex-col">
       {/* ---------------------------------- header --------------------------------- */}
-      <header className="border-b border-line bg-gradient-to-b from-[#12171C] to-bg px-5 pb-4 pt-[22px]">
-        <div className="flex items-center justify-between gap-3.5">
+      <header className="pt-safe border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
+        <div className="flex items-center justify-between gap-2">
           <div className="font-display text-[15px] font-black tracking-[.14em]">
             GYM<span className="text-accent">·</span>LOG
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button
               onClick={logOut}
-              className="text-[12px] font-semibold text-muted transition hover:text-text"
+              aria-label="Log out"
+              title="Log out"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-surface text-muted transition active:scale-95"
             >
-              Log out
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
             </button>
-            <ProgressRing done={doneCount} total={day.items.length} />
+            <ProgressRing done={doneCount} total={day.items.length} size={58} />
           </div>
         </div>
 
         <div className="mt-3">
-          <div className="font-display text-[34px] font-black uppercase leading-[.95] tracking-tight">
+          <div className="font-display text-[clamp(26px,8vw,34px)] font-black uppercase leading-[.95] tracking-tight">
             {DAYS[selected].full}
           </div>
           <div className="mt-1.5 text-[13px] font-medium tracking-[.02em] text-muted">
-            {day.isRestDay ? (
-              <>Rest day — recover well.</>
+            {focusEditing ? (
+              <input
+                autoFocus
+                value={focusDraft}
+                onChange={(e) => setFocusDraft(e.target.value)}
+                onBlur={commitFocus}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  if (e.key === "Escape") {
+                    setFocusDraft(day.focusLabel);
+                    setFocusEditing(false);
+                  }
+                }}
+                placeholder="e.g. Back & Biceps"
+                aria-label={`Focus for ${DAYS[selected].full}`}
+                className="w-full rounded-lg border border-accent bg-raised px-2.5 py-1.5 text-[14px] font-semibold text-text outline-none"
+              />
             ) : (
-              <>
-                Focus: <b className="font-semibold text-text">{day.focusLabel}</b>
-              </>
+              <button
+                onClick={() => setFocusEditing(true)}
+                className="group inline-flex items-center gap-1.5 text-left"
+                aria-label={`Edit focus for ${DAYS[selected].full}`}
+              >
+                {day.isRestDay ? (
+                  <span>Rest day — recover well.</span>
+                ) : (
+                  <span>
+                    Focus: <b className="font-semibold text-text">{day.focusLabel}</b>
+                  </span>
+                )}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.4}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="opacity-50 transition group-hover:opacity-100"
+                  aria-hidden="true"
+                >
+                  <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+                </svg>
+              </button>
             )}
-            {selected !== todayIdx && (
+            {selected !== todayIdx && !focusEditing && (
               <span className="ml-2 text-muted">
                 · {selectedDate.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
               </span>
@@ -78,7 +144,7 @@ export default function DailyTracker() {
       </header>
 
       {/* --------------------------------- day pills -------------------------------- */}
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1.5 pt-3.5">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-1.5 pt-3.5 sm:px-5">
         {DAYS.map((d, i) => {
           const dd = getDay(i);
           const active = i === selected;
@@ -90,16 +156,16 @@ export default function DailyTracker() {
                 setEditing(false);
               }}
               aria-pressed={active}
-              className={`relative flex-none rounded-[11px] border px-3.5 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
+              className={`relative min-w-[54px] flex-none rounded-[11px] border px-3 py-2.5 font-display text-[12px] font-bold tracking-[.1em] transition ${
                 active
-                  ? "border-text bg-text text-[#101418]"
+                  ? "border-text bg-text text-bg"
                   : "border-line bg-surface text-muted"
               }`}
             >
               {d.label}
               <small
-                className={`mt-0.5 block font-body text-[9px] font-semibold capitalize tracking-[.02em] ${
-                  active ? "text-[#5a636c]" : "text-muted"
+                className={`mt-0.5 block max-w-[62px] truncate font-body text-[9px] font-semibold capitalize tracking-[.02em] ${
+                  active ? "text-bg/60" : "text-muted"
                 }`}
               >
                 {dd.isRestDay ? "rest" : dd.focusLabel}
@@ -112,7 +178,7 @@ export default function DailyTracker() {
         })}
       </div>
 
-      <div className="flex gap-2 px-5">
+      <div className="flex gap-2 px-4 sm:px-5">
         <button
           onClick={() => setEditing((v) => !v)}
           className={`py-1.5 text-[12.5px] font-semibold transition ${
@@ -150,13 +216,26 @@ export default function DailyTracker() {
           const group = ex?.group ?? "core";
           const g = GROUPS[group];
           const isDone = Boolean(entries[item.exerciseId]?.done);
+          const h = history.get(item.exerciseId);
 
           return (
             <div
               key={item.exerciseId}
+              // Tapping the card body opens the log screen; the checkbox stays a
+              // one-tap shortcut for "did it exactly as planned".
+              onClick={() => !editing && setLogId(item.exerciseId)}
+              role={editing ? undefined : "button"}
+              tabIndex={editing ? undefined : 0}
+              onKeyDown={(e) => {
+                if (editing) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setLogId(item.exerciseId);
+                }
+              }}
               className={`relative flex items-center gap-3 overflow-hidden rounded-2xl border p-3 transition ${
-                isDone ? "border-transparent bg-[#151A18]" : "border-line bg-surface"
-              } ${editing ? "pr-12" : ""}`}
+                isDone ? "border-done/25 bg-card-done" : "border-line bg-surface"
+              } ${editing ? "pr-12" : "cursor-pointer active:scale-[.99]"}`}
             >
               <div className={isDone ? "opacity-70 grayscale-[.5]" : ""}>
                 <Thumb src={ex?.image ?? null} group={group} alt="" />
@@ -173,7 +252,7 @@ export default function DailyTracker() {
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <span
                     className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-                    style={{ background: hexA(g.color, 0.16), color: g.color }}
+                    style={tagStyle(g.color)}
                   >
                     {g.name}
                   </span>
@@ -211,25 +290,34 @@ export default function DailyTracker() {
                         <>
                           {" · "}
                           <span className="font-semibold text-text">
-                            {Number.isInteger(item.weightKg)
-                              ? item.weightKg
-                              : item.weightKg.toFixed(1)}
-                            kg
+                            {formatKg(item.weightKg)}kg
                           </span>
                         </>
                       )}
                     </span>
                   )}
                 </div>
+
+                {/* What you managed last week, so you know what to load today. */}
+                {!editing && h && h.lastWeekBestKg > 0 && (
+                  <div className="mt-1 text-[11px] text-muted">
+                    Last week{" "}
+                    <b className="font-semibold text-text">{formatKg(h.lastWeekBestKg)}kg</b>
+                    {h.bestKg > h.lastWeekBestKg && <> · best {formatKg(h.bestKg)}kg</>}
+                  </div>
+                )}
               </div>
 
               {!editing && (
                 <button
-                  onClick={() => !isFuture && toggle(item.exerciseId, item)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // don't also open the log sheet
+                    if (!isFuture) toggle(item.exerciseId, item);
+                  }}
                   disabled={isFuture}
                   aria-pressed={isDone}
                   aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
-                  className={`flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[9px] border-2 transition disabled:opacity-30 ${
+                  className={`flex h-9 w-9 flex-none items-center justify-center rounded-[10px] border-2 transition active:scale-90 disabled:opacity-30 ${
                     isDone ? "border-done bg-done" : "border-line bg-transparent"
                   }`}
                 >
@@ -237,7 +325,7 @@ export default function DailyTracker() {
                     viewBox="0 0 24 24"
                     className={`h-4 w-4 ${isDone ? "animate-pop opacity-100" : "opacity-0"}`}
                     fill="none"
-                    stroke="#101418"
+                    stroke="#0E1114"
                     strokeWidth={3.4}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -249,7 +337,10 @@ export default function DailyTracker() {
 
               {editing && (
                 <button
-                  onClick={() => removeExercise(selected, item.exerciseId)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeExercise(selected, item.exerciseId);
+                  }}
                   aria-label={`Remove ${ex?.name ?? "exercise"}`}
                   className="absolute bottom-0 right-0 top-0 w-11 text-lg text-muted transition hover:text-accent"
                 >
@@ -274,6 +365,24 @@ export default function DailyTracker() {
         onAdd={(id) => addExercise(selected, id)}
         existingIds={new Set(day.items.map((i) => i.exerciseId))}
         dayLabel={DAYS[selected].full}
+      />
+
+      <LogSheet
+        open={logId !== null}
+        onClose={() => setLogId(null)}
+        exercise={logId ? byId.get(logId) : undefined}
+        item={logItem}
+        history={logId ? history.get(logId) : undefined}
+        isDone={logId ? Boolean(entries[logId]?.done) : false}
+        onSave={({ sets, reps, weightKg, markDone }) => {
+          if (!logId) return;
+          // Carry the numbers into the plan so next week starts from here…
+          updateItem(selected, logId, { sets, reps, weightKg });
+          // …and record what was actually done today.
+          if (markDone || entries[logId]?.done) {
+            setCompletion(logId, { done: true, sets, reps, weightKg });
+          }
+        }}
       />
     </div>
   );

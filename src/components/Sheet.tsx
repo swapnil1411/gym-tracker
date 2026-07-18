@@ -39,7 +39,7 @@ export default function Sheet({
   return (
     <>
       <div
-        className="fixed inset-0 z-20 animate-fadeIn bg-[rgba(6,8,10,.7)] backdrop-blur-[3px]"
+        className="fixed inset-0 z-20 animate-fadeIn bg-black/60 backdrop-blur-[3px]"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -49,7 +49,7 @@ export default function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="fixed bottom-0 left-1/2 z-30 flex max-h-[82vh] w-full max-w-app -translate-x-1/2 animate-sheetUp flex-col rounded-t-[22px] border-t border-line bg-surface outline-none"
+        className="fixed bottom-0 left-1/2 z-30 flex max-h-[82dvh] w-full max-w-app -translate-x-1/2 animate-sheetUp flex-col rounded-t-[22px] border-t border-line bg-surface outline-none"
       >
         <div className="mx-auto mb-1 mt-2.5 h-1 w-9 rounded-sm bg-line" />
         <h3 className="mx-5 mb-0.5 mt-1.5 font-display text-[19px] font-extrabold">{title}</h3>

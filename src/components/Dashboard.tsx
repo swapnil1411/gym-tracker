@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
-import { DAYS, GROUPS, dateKey, hexA, toMondayIndex } from "@/lib/groups";
+import ThemeToggle from "./ThemeToggle";
+import { DAYS, GROUPS, barColor, dateKey, toMondayIndex } from "@/lib/groups";
 import { indexById, useLibrary } from "@/lib/library";
 import { useCompletionsRange, usePlan } from "@/lib/store";
 import {
@@ -79,11 +80,14 @@ export default function Dashboard() {
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-gradient-to-b from-[#12171C] to-bg px-5 pb-4 pt-[22px]">
-        <div className="font-display text-[15px] font-black tracking-[.14em]">
-          YOUR<span className="text-accent">·</span>PROGRESS
+      <header className="border-b border-line bg-gradient-to-b from-header-top to-bg px-4 pb-4 pt-5 sm:px-5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-display text-[15px] font-black tracking-[.14em]">
+            YOUR<span className="text-accent">·</span>PROGRESS
+          </div>
+          <ThemeToggle />
         </div>
-        <h1 className="mt-3 font-display text-[30px] font-black uppercase leading-[.95] tracking-tight">
+        <h1 className="mt-3 font-display text-[clamp(24px,7vw,30px)] font-black uppercase leading-[.95] tracking-tight">
           Dashboard
         </h1>
       </header>
@@ -183,14 +187,19 @@ export default function Dashboard() {
                   title={`${key} — ${Math.round(frac * 100)}% of plan`}
                   className="aspect-square rounded-md border text-center"
                   style={{
-                    background: frac > 0 ? hexA("#39D98A", 0.15 + frac * 0.75) : "#161B21",
-                    borderColor: isToday ? "#FF5A1F" : "transparent",
+                    background:
+                      frac > 0
+                        ? `rgb(var(--done) / ${0.15 + frac * 0.75})`
+                        : "rgb(var(--heat-empty))",
+                    borderColor: isToday ? "rgb(var(--accent))" : "transparent",
                     opacity: future ? 0.35 : 1,
                   }}
                 >
                   <span
                     className="block pt-[15%] text-[9px] font-semibold"
-                    style={{ color: frac > 0.45 ? "#0E1114" : "#6B747E" }}
+                    // On a saturated cell the number needs to flip to the page
+                    // background colour to stay legible in either theme.
+                    style={{ color: frac > 0.45 ? "rgb(var(--bg))" : "rgb(var(--muted))" }}
                   >
                     {d.getDate()}
                   </span>
@@ -220,7 +229,7 @@ export default function Dashboard() {
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${(sets / maxVolume) * 100}%`,
-                          background: g?.color ?? "#8B949E",
+                          background: g ? barColor(g.color) : "rgb(var(--muted))",
                         }}
                       />
                     </div>
@@ -277,8 +286,9 @@ export default function Dashboard() {
                       <span className="text-muted"> · {day.focusLabel}</span>
                     </span>
                     <span
-                      className="font-display text-[12px] font-bold tabular-nums"
-                      style={{ color: done >= total ? "#39D98A" : "#8B949E" }}
+                      className={`font-display text-[12px] font-bold tabular-nums ${
+                        done >= total ? "text-done" : "text-muted"
+                      }`}
                     >
                       {done}/{total} done
                     </span>

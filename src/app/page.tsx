@@ -14,7 +14,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen w-full max-w-app items-center justify-center">
+      <main className="flex min-h-dvh w-full max-w-app items-center justify-center">
         <div className="animate-fadeIn font-display text-[15px] font-black tracking-[.14em] text-muted">
           GYM<span className="text-accent">·</span>LOG
         </div>
@@ -27,7 +27,7 @@ export default function Home() {
   return (
     <div className="relative flex w-full max-w-app flex-col overflow-x-hidden">
       {/* pb-24 keeps the last card clear of the fixed bottom nav */}
-      <main className="flex min-h-screen flex-col pb-24">
+      <main className="flex min-h-dvh flex-col pb-24">
         {tab === "today" && <DailyTracker />}
         {tab === "plan" && <PlanEditor />}
         {tab === "stats" && <Dashboard />}

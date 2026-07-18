@@ -4,15 +4,19 @@ const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // <alpha-value> lets bg-surface/60 and text-muted/70 keep working while the
+      // underlying colour is swapped by the light/dark theme.
       colors: {
-        bg: "#0E1114",
-        surface: "#181D22",
-        raised: "#212830",
-        line: "#2A323B",
-        text: "#F3F2EC",
-        muted: "#8B949E",
-        accent: "#FF5A1F",
-        done: "#39D98A",
+        bg: "rgb(var(--bg) / <alpha-value>)",
+        surface: "rgb(var(--surface) / <alpha-value>)",
+        raised: "rgb(var(--raised) / <alpha-value>)",
+        line: "rgb(var(--line) / <alpha-value>)",
+        text: "rgb(var(--text) / <alpha-value>)",
+        muted: "rgb(var(--muted) / <alpha-value>)",
+        accent: "rgb(var(--accent) / <alpha-value>)",
+        done: "rgb(var(--done) / <alpha-value>)",
+        "header-top": "rgb(var(--header-top) / <alpha-value>)",
+        "card-done": "rgb(var(--card-done) / <alpha-value>)",
       },
       fontFamily: {
         display: ["var(--font-archivo)", "system-ui", "sans-serif"],

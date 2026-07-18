@@ -18,7 +18,7 @@ export default function BottomNav({
   return (
     <nav
       aria-label="Main"
-      className="pb-safe fixed bottom-0 left-1/2 z-10 w-full max-w-app -translate-x-1/2 border-t border-line bg-[rgba(14,17,20,.92)] backdrop-blur-lg"
+      className="pb-safe fixed bottom-0 left-1/2 z-10 w-full max-w-app -translate-x-1/2 border-t border-line bg-bg/90 backdrop-blur-lg"
     >
       <div className="flex">
         {TABS.map((t) => {

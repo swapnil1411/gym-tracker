@@ -19,7 +19,7 @@ export default function ProgressRing({
   const circumference = 2 * Math.PI * r;
   const frac = total > 0 ? done / total : 0;
   const complete = total > 0 && done === total;
-  const color = complete ? "#39D98A" : "#FF5A1F";
+  const color = complete ? "rgb(var(--done))" : "rgb(var(--accent))";
 
   return (
     <div
@@ -35,7 +35,7 @@ export default function ProgressRing({
           r={r}
           fill="none"
           strokeWidth={stroke}
-          stroke="#2A323B"
+          stroke="rgb(var(--line))"
         />
         <circle
           className="ring-fill"
@@ -53,8 +53,9 @@ export default function ProgressRing({
       {showText && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <b
-            className="font-display text-base font-extrabold leading-none"
-            style={{ color: complete ? "#39D98A" : undefined }}
+            className={`font-display text-[15px] font-extrabold leading-none ${
+              complete ? "text-done" : ""
+            }`}
           >
             {done}/{total}
           </b>

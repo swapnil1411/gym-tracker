@@ -181,6 +181,32 @@ export function useDayCompletions(dayKey: string) {
     [user, dayKey, entries]
   );
 
+  /** Write an exact completion — used by the per-exercise log screen. */
+  const setCompletion = useCallback(
+    async (
+      exerciseId: string,
+      v: { done: boolean; sets: number; reps: number; weightKg: number }
+    ) => {
+      if (!user) return;
+      await setDoc(
+        doc(getDb(), "users", user.uid, "completions", dayKey),
+        {
+          entries: {
+            [exerciseId]: {
+              done: v.done,
+              setsDone: v.done ? v.sets : 0,
+              repsDone: v.done ? v.reps : 0,
+              weightKg: v.done ? v.weightKg : 0,
+              at: new Date().toISOString(),
+            },
+          },
+        },
+        { merge: true }
+      );
+    },
+    [user, dayKey]
+  );
+
   /** Adjust the logged weight for an already-completed exercise. */
   const setLoggedWeight = useCallback(
     async (exerciseId: string, weightKg: number) => {
@@ -194,7 +220,7 @@ export function useDayCompletions(dayKey: string) {
     [user, dayKey]
   );
 
-  return { entries, toggle, setLoggedWeight };
+  return { entries, toggle, setCompletion, setLoggedWeight };
 }
 
 /**

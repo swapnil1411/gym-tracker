@@ -20,7 +20,7 @@ export default function AuthScreen() {
 
   if (!configured) {
     return (
-      <main className="flex min-h-screen w-full max-w-app flex-col justify-center px-6">
+      <main className="flex min-h-dvh w-full max-w-app flex-col justify-center px-6">
         <h1 className="font-display text-2xl font-black tracking-[.14em]">
           GYM<span className="text-accent">·</span>LOG
         </h1>
@@ -69,7 +69,7 @@ export default function AuthScreen() {
   const cta = mode === "login" ? "Log in" : mode === "signup" ? "Create account" : "Send reset link";
 
   return (
-    <main className="flex min-h-screen w-full max-w-app flex-col justify-center px-6 py-10">
+    <main className="flex min-h-dvh w-full max-w-app flex-col justify-center px-6 py-10">
       <div className="font-display text-[15px] font-black tracking-[.14em]">
         GYM<span className="text-accent">·</span>LOG
       </div>
@@ -117,12 +117,12 @@ export default function AuthScreen() {
         )}
 
         {error && (
-          <p role="alert" className="rounded-xl bg-[#2A1614] px-3.5 py-2.5 text-[13px] text-[#FF8A6B]">
+          <p role="alert" className="rounded-xl bg-accent/10 px-3.5 py-2.5 text-[13px] text-accent">
             {error}
           </p>
         )}
         {notice && (
-          <p role="status" className="rounded-xl bg-[#14241C] px-3.5 py-2.5 text-[13px] text-done">
+          <p role="status" className="rounded-xl bg-done/10 px-3.5 py-2.5 text-[13px] text-done">
             {notice}
           </p>
         )}

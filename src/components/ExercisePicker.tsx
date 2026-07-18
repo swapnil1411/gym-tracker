@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Sheet from "./Sheet";
 import Thumb from "./Thumb";
-import { GROUPS, GROUP_KEYS, hexA } from "@/lib/groups";
+import { GROUPS, GROUP_KEYS, tagStyle } from "@/lib/groups";
 import { searchLibrary, useLibrary } from "@/lib/library";
 import type { MuscleGroup } from "@/types";
 
@@ -97,7 +97,7 @@ export default function ExercisePicker({
                   <div className="mt-0.5 flex items-center gap-2">
                     <span
                       className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
-                      style={{ background: hexA(g.color, 0.16), color: g.color }}
+                      style={tagStyle(g.color)}
                     >
                       {g.name}
                     </span>

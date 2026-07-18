@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { MuscleGroup } from "@/types";
 
 export interface GroupMeta {
@@ -24,6 +25,23 @@ export const GROUP_KEYS = Object.keys(GROUPS) as MuscleGroup[];
 export function hexA(hex: string, alpha: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+}
+
+/**
+ * Muscle-group tag colours. The palette was picked for a dark field, so on
+ * light backgrounds the text is darkened via --tag-darken (set per theme in
+ * globals.css) rather than maintaining a second hand-tuned palette.
+ */
+export function tagStyle(color: string): CSSProperties {
+  return {
+    background: `color-mix(in srgb, ${color} calc(var(--tag-alpha) * 100%), transparent)`,
+    color: `color-mix(in srgb, ${color}, black var(--tag-darken))`,
+  };
+}
+
+/** Same darkening treatment, for solid swatches like the volume bars. */
+export function barColor(color: string): string {
+  return `color-mix(in srgb, ${color}, black calc(var(--tag-darken) * 0.6))`;
 }
 
 export const DAYS = [
