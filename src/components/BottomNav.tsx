@@ -2,14 +2,19 @@
 
 import type React from "react";
 
-export type Tab = "today" | "rehab" | "body" | "stats";
+export type Tab = "today" | "rehab" | "stats" | "body";
 
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+/*
+ * Four tabs, per the Ergonomic design: Body was promoted out of a header icon
+ * on Today, where it was effectively undiscoverable, into the bar itself.
+ */
+const TABS: { id: Tab; label: string; icon: (on: boolean) => React.ReactNode }[] = [
   {
     id: "today",
     label: "Today",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    // The flame fills when active — the only tab that does, because it's home.
+    icon: (on) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill={on ? "currentColor" : "none"}>
         <path
           d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-1.5.6-2.7 1.5-3.7C9 10 10 8.5 12 3z"
           stroke="currentColor"
@@ -22,28 +27,40 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   {
     id: "rehab",
     label: "Rehab",
-    icon: (
-      // A bent leg with the joint called out — the knee is the whole point.
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    icon: () => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path
-          d="M9 3v6.5a3.5 3.5 0 0 0 3.5 3.5H15"
+          d="M4 14h3l2-5 3 9 2-6 1.5 2H20"
           stroke="currentColor"
           strokeWidth={1.9}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <path d="M18 13v8" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" />
-        <circle cx="12.5" cy="13" r="3" stroke="currentColor" strokeWidth={1.9} />
       </svg>
     ),
   },
   {
     id: "stats",
     label: "Stats",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    icon: () => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path
           d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"
+          stroke="currentColor"
+          strokeWidth={1.9}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "body",
+    label: "Body",
+    icon: () => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path
+          d="M12 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM6 22v-6l-2-1 1.5-5A2 2 0 0 1 7.4 9h9.2a2 2 0 0 1 1.9 1l1.5 5-2 1v6"
           stroke="currentColor"
           strokeWidth={1.9}
           strokeLinecap="round"
@@ -64,11 +81,9 @@ export default function BottomNav({
   return (
     <nav
       aria-label="Main"
-      className="pb-safe flex-none border-t border-line bg-bg shadow-[0_-16px_32px_-28px_rgba(0,0,0,0.9)] sm:rounded-b-[42px]"
+      className="pb-safe z-10 flex-none border-t border-line bg-bg sm:rounded-b-[42px]"
     >
-      {/* Three tabs no longer fit at a fixed width on a narrow phone, so they
-          share the bar evenly instead, capped so they don't sprawl on tablet. */}
-      <div className="mx-auto flex max-w-[400px] items-center justify-around px-3 pb-4 pt-5">
+      <div className="flex items-stretch px-2 pb-3 pt-2.5">
         {TABS.map((t) => {
           const on = t.id === active;
           return (
@@ -76,21 +91,17 @@ export default function BottomNav({
               key={t.id}
               onClick={() => onChange(t.id)}
               aria-current={on ? "page" : undefined}
-              className="press flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-2.5"
+              className="press flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl py-1.5"
             >
-              <span
-                className={`flex leading-none transition ${
-                  on ? "text-accent" : "text-mute"
-                }`}
-              >
-                {t.icon}
+              <span className={`flex leading-none transition ${on ? "text-accent" : "text-mute"}`}>
+                {t.icon(on)}
               </span>
               <span
-                className={`font-display text-[10px] font-bold tracking-[.08em] transition ${
-                  on ? "text-accent" : "text-mute"
+                className={`text-[10.5px] tracking-[.04em] transition ${
+                  on ? "font-extrabold text-accent" : "font-semibold text-mute"
                 }`}
               >
-                {t.label.toUpperCase()}
+                {t.label}
               </span>
             </button>
           );

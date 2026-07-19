@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import ThemeToggle from "./ThemeToggle";
 import { GROUPS } from "@/lib/groups";
 import {
   ACTIVITY,
@@ -20,40 +19,69 @@ const Card = ({ title, children }: { title: string; children: React.ReactNode })
   </section>
 );
 
-/** Numeric field. Empty string clears back to null rather than storing 0. */
-function Field({
+/**
+ * A measurement row: −, the value, +.
+ *
+ * The design specified steppers only, but the middle stays a real input on
+ * purpose — nobody is tapping + seventy-four times to enter a starting weight.
+ * The steppers are for nudging, the field is for saying.
+ */
+function MeasureRow({
   label,
   unit,
   value,
   onChange,
   placeholder,
+  step = 1,
 }: {
   label: string;
   unit: string;
   value: number | null;
   onChange: (v: number | null) => void;
   placeholder: string;
+  step?: number;
 }) {
+  const nudge = (by: number) =>
+    onChange(Math.max(0, Math.round(((value ?? Number(placeholder)) + by) * 10) / 10));
+
+  const btn =
+    "press flex h-10 w-10 flex-none items-center justify-center rounded-[11px] text-[22px] leading-none";
+
   return (
-    <label className="flex flex-1 flex-col gap-1.5">
-      <span className="text-[10.5px] font-bold uppercase tracking-[.08em] text-mute">
-        {label}
-      </span>
-      <span className="flex items-baseline gap-1 rounded-field border border-line bg-raised px-3 py-2.5 focus-within:border-accent">
-        <input
-          type="number"
-          inputMode="decimal"
-          value={value ?? ""}
-          placeholder={placeholder}
-          onChange={(e) => {
-            const v = e.target.value.trim();
-            onChange(v === "" ? null : Number(v));
-          }}
-          className="w-full min-w-0 bg-transparent font-display text-[19px] font-bold tabular-nums outline-none placeholder:font-body placeholder:text-[15px] placeholder:font-normal placeholder:text-mute/70"
-        />
-        <span className="flex-none text-[12px] font-semibold text-mute">{unit}</span>
-      </span>
-    </label>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-[14px] font-semibold">{label}</span>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => nudge(-step)}
+          aria-label={`Decrease ${label.toLowerCase()}`}
+          className={`${btn} border border-line bg-raised text-dim`}
+        >
+          −
+        </button>
+        <span className="flex min-w-[74px] items-baseline justify-center gap-1">
+          <input
+            type="number"
+            inputMode="decimal"
+            value={value ?? ""}
+            placeholder={placeholder}
+            aria-label={label}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              onChange(v === "" ? null : Number(v));
+            }}
+            className="w-full min-w-0 bg-transparent text-right font-display text-[18px] font-extrabold tabular-nums outline-none placeholder:font-normal placeholder:text-mute/60"
+          />
+          <span className="flex-none text-[12px] font-semibold text-mute">{unit}</span>
+        </span>
+        <button
+          onClick={() => nudge(step)}
+          aria-label={`Increase ${label.toLowerCase()}`}
+          className={`${btn} bg-accent text-on-accent`}
+        >
+          +
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -109,49 +137,42 @@ function Segmented<T extends string>({
   );
 }
 
-export default function BodyPage({ onBack }: { onBack: () => void }) {
+export default function BodyPage() {
   const { body, update } = useBody();
   const m = useMemo(() => computeMetrics(body), [body]);
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
-        <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={onBack}
-            className="press -ml-1 flex items-center gap-1.5 rounded-field px-1.5 py-1 text-[13px] font-semibold text-muted"
-          >
-            ‹ Today
-          </button>
-          <ThemeToggle />
-        </div>
-        <h1 className="mt-3 font-display text-[clamp(24px,7vw,30px)] font-black uppercase leading-[.95] tracking-tight">
+      <header className="px-5 pb-2 pt-4">
+        <div className="text-[11px] font-extrabold uppercase tracking-[.12em] text-accent">You</div>
+        <h1 className="mt-1 font-display text-[28px] font-extrabold tracking-[-.02em]">
           Your body
         </h1>
-        <p className="mt-1.5 text-[13px] text-muted">
-          Your weight and height, and what they mean for daily food and water.
+        <p className="mt-2 text-[13px] leading-[1.5] text-muted">
+          Weight and height, and what they mean for daily food and water.
         </p>
       </header>
 
       <div className="flex flex-col gap-3 px-5 py-4">
         {/* ------------------------------- inputs ------------------------------- */}
         <Card title="Measurements">
-          <div className="flex gap-2.5">
-            <Field
+          <div className="flex flex-col gap-2.5">
+            <MeasureRow
               label="Weight"
               unit="kg"
               placeholder="70"
+              step={0.5}
               value={body.weightKg}
               onChange={(v) => update({ weightKg: v })}
             />
-            <Field
+            <MeasureRow
               label="Height"
               unit="cm"
               placeholder="175"
               value={body.heightCm}
               onChange={(v) => update({ heightCm: v })}
             />
-            <Field
+            <MeasureRow
               label="Age"
               unit="yr"
               placeholder="30"
@@ -160,7 +181,7 @@ export default function BodyPage({ onBack }: { onBack: () => void }) {
             />
           </div>
 
-          <div className="mt-3">
+          <div className="mt-4">
             <Segmented<Sex>
               value={body.sex}
               onChange={(sex) => update({ sex })}

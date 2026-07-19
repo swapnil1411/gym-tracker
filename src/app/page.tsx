@@ -3,6 +3,7 @@
 import { useState } from "react";
 import AuthScreen from "@/components/AuthScreen";
 import BottomNav, { type Tab } from "@/components/BottomNav";
+import TopBar from "@/components/TopBar";
 import DailyTracker from "@/components/DailyTracker";
 import Dashboard from "@/components/Dashboard";
 import BodyPage from "@/components/BodyPage";
@@ -26,12 +27,13 @@ export default function Home() {
   if (!user) return <AuthScreen />;
 
   return (
-    <div className="app-chrome relative flex h-dvh w-full max-w-app flex-col overflow-hidden pt-5 sm:my-6 sm:h-[812px] sm:rounded-[42px] sm:pt-7">
+    <div className="app-chrome relative flex h-dvh w-full max-w-app flex-col overflow-hidden sm:my-6 sm:h-[812px] sm:rounded-[42px]">
+      <TopBar />
       <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        {tab === "today" && <DailyTracker onOpenBody={() => setTab("body")} />}
+        {tab === "today" && <DailyTracker />}
         {tab === "rehab" && <RehabPage />}
-        {tab === "body" && <BodyPage onBack={() => setTab("today")} />}
         {tab === "stats" && <Dashboard />}
+        {tab === "body" && <BodyPage />}
       </main>
       <BottomNav active={tab} onChange={setTab} />
     </div>

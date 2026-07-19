@@ -7,18 +7,15 @@ import ExerciseDetail from "./ExerciseDetail";
 import Stepper from "./Stepper";
 import ExercisePicker from "./ExercisePicker";
 import LogSheet from "./LogSheet";
-import ThemeToggle from "./ThemeToggle";
 import WorkoutSlider from "./WorkoutSlider";
 import { DAYS, GROUPS, dateKey, tagStyle, toMondayIndex } from "@/lib/groups";
 import { indexById, useLibrary } from "@/lib/library";
 import { useDayCompletions } from "@/lib/store";
 import { useSchedule, useWorkouts, useLegacyPlanMigration } from "@/lib/workouts";
 import { useExerciseHistory, formatKg, formatDayLabel } from "@/lib/history";
-import { useAuth } from "@/lib/auth-context";
 import type { LibraryExercise } from "@/types";
 
-export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void }) {
-  const { logOut } = useAuth();
+export default function DailyTracker() {
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
 
@@ -122,45 +119,10 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
   return (
     <div className="flex w-full max-w-app flex-col">
       {/* ---------------------------------- header --------------------------------- */}
-      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-[26px] w-[26px] items-center justify-center rounded-lg bg-accent text-on-accent">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M6.5 7v10M17.5 7v10M6.5 12h11M4 9.5v5M20 9.5v5"
-                  stroke="currentColor"
-                  strokeWidth={2.4}
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <div className="font-display text-[16px] font-bold tracking-[.09em]">GYMLOG</div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <button
-              onClick={onOpenBody}
-              aria-label="Your body — BMI, calories and water"
-              title="Your body"
-              className="press flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-[15px] text-dim"
-            >
-              ⚖️
-            </button>
-            <button
-              onClick={logOut}
-              aria-label="Log out"
-              title="Log out"
-              className="press flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-dim"
-            >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-5 flex items-start justify-between gap-4">
+      {/* The brand, theme toggle and log-out moved to the persistent TopBar in
+          the Ergonomic design, so this header is just the day itself. */}
+      <header className="px-5 pb-4 pt-3">
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             {nameEditing && soleSession ? (
               <input
@@ -217,49 +179,16 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
               {selected === todayIdx && " · today"}
               {isOverride && <span className="ml-1.5">· today only</span>}
             </div>
-          </div>
-          <ProgressRing done={doneCount} total={allItems.length} size={58} />
-        </div>
-
-        <div className="mt-5 rounded-[22px] bg-accent p-5 text-on-accent shadow-lift-strong">
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-[11px] font-bold uppercase tracking-[.12em] text-white/75">
-                Today&apos;s session
+            {/* The volume/duration figures the accent hero card used to carry —
+                kept, because they answer "how long will this take". */}
+            {allItems.length > 0 && (
+              <div className="mt-1 text-[12.5px] font-medium text-mute">
+                {allItems.length} {allItems.length === 1 ? "exercise" : "exercises"} ·{" "}
+                {totalSets} sets · ~{estimatedMinutes} min
               </div>
-              <div className="mt-1 truncate font-display text-[23px] font-bold">
-                {title}
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                if (nextOpen) setLogTarget({ w: nextOpen.workoutId, ex: nextOpen.item.exerciseId });
-              }}
-              disabled={!nextOpen || isFuture}
-              aria-label="Start next exercise"
-              className="press flex h-[52px] w-[52px] flex-none items-center justify-center rounded-2xl bg-white/20 text-white disabled:opacity-35"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </button>
+            )}
           </div>
-          <div className="mt-4 flex gap-5">
-            <div>
-              <div className="font-display text-[18px] font-bold">{allItems.length}</div>
-              <div className="text-[11px] font-medium text-white/70">exercises</div>
-            </div>
-            <div className="w-px bg-white/20" />
-            <div>
-              <div className="font-display text-[18px] font-bold">{totalSets}</div>
-              <div className="text-[11px] font-medium text-white/70">sets</div>
-            </div>
-            <div className="w-px bg-white/20" />
-            <div>
-              <div className="font-display text-[18px] font-bold">~{estimatedMinutes}</div>
-              <div className="text-[11px] font-medium text-white/70">min</div>
-            </div>
-          </div>
+          <ProgressRing done={doneCount} total={allItems.length} size={56} />
         </div>
 
         <WorkoutSlider
@@ -348,6 +277,17 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
           </div>
         )}
 
+        {sessions.length > 0 && (
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-[.12em] text-mute">
+              Exercises · tap to log
+            </span>
+            <span className="text-[12.5px] font-bold text-accent-text">
+              {doneCount}/{allItems.length}
+            </span>
+          </div>
+        )}
+
         {sessions.map((w) => (
           <div key={w.id} className="flex flex-col gap-2.5">
             {/* Only label the groups when there's more than one session in play. */}
@@ -399,18 +339,48 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
                     isDone ? "border-success bg-success2" : "border-line bg-surface"
                   } ${editing ? "" : "cursor-pointer press press-card"}`}
                 >
-                  <div
-                    className={isDone ? "opacity-70 grayscale-[.5]" : ""}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Thumb
-                      src={ex?.image ?? null}
-                      group={group}
-                      alt=""
-                      onPress={ex ? () => setDetail(ex) : undefined}
-                      pressLabel={ex ? `See how to do ${ex.name}` : undefined}
-                    />
-                  </div>
+                  {/*
+                   * Ergonomic design: the tick moves to the leading edge and
+                   * becomes the biggest target on the row, because marking a set
+                   * done is the thing you do mid-session with shaky hands. The
+                   * rest of the row still opens the log sheet.
+                   */}
+                  {!editing ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isFuture) toggle(item.exerciseId, item);
+                      }}
+                      disabled={isFuture}
+                      aria-pressed={isDone}
+                      aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
+                      className={`press flex h-11 w-11 flex-none items-center justify-center rounded-[13px] border-2 disabled:opacity-30 ${
+                        isDone ? "border-success bg-success" : "border-surface3 bg-transparent"
+                      }`}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`h-[18px] w-[18px] ${isDone ? "animate-pop opacity-100" : "opacity-0"}`}
+                        fill="none"
+                        stroke="rgb(var(--on-done))"
+                        strokeWidth={2.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M5 12.5 10 17l9-10" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Thumb
+                        src={ex?.image ?? null}
+                        group={group}
+                        alt=""
+                        onPress={ex ? () => setDetail(ex) : undefined}
+                        pressLabel={ex ? `See how to do ${ex.name}` : undefined}
+                      />
+                    </div>
+                  )}
 
                   <div className="min-w-0 flex-1">
                     <div
@@ -482,30 +452,22 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
                   </div>
 
                   {!editing && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // don't also open the log sheet
-                        if (!isFuture) toggle(item.exerciseId, item);
-                      }}
-                      disabled={isFuture}
-                      aria-pressed={isDone}
-                      aria-label={`Mark ${ex?.name ?? "exercise"} ${isDone ? "not done" : "done"}`}
-                      className={`press flex h-8 w-8 flex-none items-center justify-center rounded-[9px] border-2 disabled:opacity-30 ${
-                        isDone ? "border-success bg-success" : "border-surface3 bg-transparent"
-                      }`}
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                      className="flex-none text-mute"
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className={`h-4 w-4 ${isDone ? "animate-pop opacity-100" : "opacity-0"}`}
-                        fill="none"
-                        stroke="rgb(var(--on-done))"
-                        strokeWidth={3.4}
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth={2}
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                      >
-                        <path d="M4 12l6 6L20 5" />
-                      </svg>
-                    </button>
+                      />
+                    </svg>
                   )}
 
                   {/* Reorder and remove, in a column so nothing overlaps. */}
@@ -566,7 +528,7 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
               </svg>
             </div>
             <div className="min-w-0">
-              <div className="text-[13px] font-bold text-pr">PR record ready</div>
+              <div className="text-[13px] font-extrabold text-pr">PR to beat today</div>
               <div className="mt-0.5 truncate text-[12.5px] font-medium text-dim">
                 {prTarget.ex.name} · best {formatKg(prTarget.previousBest)}kg
                 {prTarget.h?.bestOn ? ` · ${formatDayLabel(prTarget.h.bestOn)}` : ""}
@@ -575,6 +537,35 @@ export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void })
           </button>
         )}
       </div>
+
+      {/*
+       * Sticky primary action. `sticky bottom-0` pins it to the bottom of the
+       * scrolling <main>, so it sits just above the nav without leaving the
+       * normal flow — no fixed positioning to fight with the phone frame. The
+       * gradient stops the list from appearing to run underneath a hard edge.
+       */}
+      {sessions.length > 0 && !isFuture && !editing && (
+        <div className="sticky bottom-0 z-[8] mt-auto bg-gradient-to-t from-bg from-55% to-transparent px-5 pb-3 pt-7">
+          <button
+            onClick={() => {
+              if (nextOpen) setLogTarget({ w: nextOpen.workoutId, ex: nextOpen.item.exerciseId });
+            }}
+            disabled={!nextOpen}
+            className="press flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-accent text-[16px] font-extrabold text-on-accent shadow-lift-strong disabled:opacity-55 disabled:shadow-none"
+          >
+            {nextOpen && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+            {!nextOpen
+              ? "Session complete"
+              : doneCount === 0
+                ? "Start session"
+                : "Continue session"}
+          </button>
+        </div>
+      )}
 
       <ExercisePicker
         open={pickerFor !== null}

@@ -7,7 +7,7 @@ import ExerciseDetail from "./ExerciseDetail";
 import ProgressChart from "./ProgressChart";
 import Stepper from "./Stepper";
 import { GROUPS, tagStyle } from "@/lib/groups";
-import { formatKg, type ExerciseHistory } from "@/lib/history";
+import { formatKg, formatDayLabel, type ExerciseHistory } from "@/lib/history";
 import type { CompletionEntry, LibraryExercise, PlanItem } from "@/types";
 
 /**
@@ -87,6 +87,20 @@ export default function LogSheet({
           </div>
         </div>
 
+        {/* "LAST TIME" callout from the Ergonomic design — the number to beat,
+            stated before you're asked to choose today's. */}
+        {suggestion > 0 && (
+          <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5">
+            <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+              Last time
+            </div>
+            <p className="mt-1.5 text-[13px] text-dim">
+              You logged <b className="font-bold text-text">{formatKg(suggestion)}kg</b>
+              {history?.lastOn ? ` ${formatDayLabel(history.lastOn)}` : ""} — that&apos;s the number to beat.
+            </p>
+          </div>
+        )}
+
         {history && history.points.length > 0 ? (
           <div className="mt-3">
             <ProgressChart points={history.points} />
@@ -109,10 +123,10 @@ export default function LogSheet({
 
           <div className="mt-3 flex flex-col gap-3">
             <Row label="Sets">
-              <Stepper label="sets" value={sets} onChange={setSets} suffix=" sets" />
+              <Stepper label="sets" value={sets} onChange={setSets} suffix=" sets" size="lg" />
             </Row>
             <Row label="Reps">
-              <Stepper label="reps" value={reps} onChange={setReps} max={200} suffix=" reps" />
+              <Stepper label="reps" value={reps} onChange={setReps} max={200} suffix=" reps" size="lg" />
             </Row>
             <Row label="Weight">
               <Stepper
@@ -123,6 +137,7 @@ export default function LogSheet({
                 max={500}
                 step={2.5}
                 suffix=" kg"
+                size="lg"
               />
             </Row>
           </div>
@@ -145,28 +160,28 @@ export default function LogSheet({
           )}
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={() => {
-              onSave({ sets, reps, weightKg, markDone: false });
-              onClose();
-            }}
-            className="flex-1 rounded-field bg-surface py-3.5 text-[15px] font-semibold press"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => {
-              onSave({ sets, reps, weightKg, markDone: true });
-              onClose();
-            }}
-            className={`flex-1 rounded-field py-3.5 text-[15px] font-bold text-on-accent shadow-lift-strong press ${
-              isDone ? "bg-done" : "bg-accent"
-            }`}
-          >
-            {isDone ? "Update done" : "Save & done"}
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            onSave({ sets, reps, weightKg, markDone: true });
+            onClose();
+          }}
+          className={`press mt-4 h-14 w-full rounded-2xl text-[16px] font-extrabold text-on-accent shadow-lift-strong ${
+            isDone ? "bg-done" : "bg-accent"
+          }`}
+        >
+          {isDone ? "Update this log" : "Save & mark done"}
+        </button>
+        {/* Kept alongside the design's single CTA: adjusting a future session's
+            numbers shouldn't force you to mark it as trained. */}
+        <button
+          onClick={() => {
+            onSave({ sets, reps, weightKg, markDone: false });
+            onClose();
+          }}
+          className="press mt-2 w-full rounded-field border border-line py-2.5 text-[13px] font-semibold text-muted"
+        >
+          Save without marking done
+        </button>
       </div>
 
       <ExerciseDetail

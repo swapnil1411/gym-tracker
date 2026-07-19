@@ -3,7 +3,6 @@
 import { useCallback, useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
 import Sheet from "./Sheet";
-import ThemeToggle from "./ThemeToggle";
 import { DAYS, dateKey, parseDateKey } from "@/lib/groups";
 import { useCompletionsRange } from "@/lib/store";
 import { useSchedule, useWorkouts } from "@/lib/workouts";
@@ -118,18 +117,13 @@ export default function Dashboard() {
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-[.12em] text-accent">
-              Your · Progress
-            </div>
-            <h1 className="mt-1 font-display text-[28px] font-bold tracking-[-.02em]">
-              Dashboard
-            </h1>
-          </div>
-          <ThemeToggle />
+      <header className="px-5 pb-1 pt-4">
+        <div className="text-[11px] font-extrabold uppercase tracking-[.12em] text-accent">
+          Your · Progress
         </div>
+        <h1 className="mt-1 font-display text-[28px] font-extrabold tracking-[-.02em]">
+          Dashboard
+        </h1>
       </header>
 
       <div className="flex flex-col gap-3 px-5 py-4">

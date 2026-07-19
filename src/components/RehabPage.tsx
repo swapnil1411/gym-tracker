@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Sheet from "./Sheet";
-import ThemeToggle from "./ThemeToggle";
 import { chipStyle } from "@/lib/groups";
 import {
   EXERCISES,
@@ -309,19 +308,13 @@ export default function RehabPage() {
 
   return (
     <div className="flex w-full max-w-app flex-col">
-      <header className="border-b border-line bg-bg px-5 pb-5 pt-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-[.12em] text-accent">
-              Knees Over Toes
-            </div>
-            <h1 className="mt-1 font-display text-[28px] font-bold tracking-[-.02em]">Rehab</h1>
-          </div>
-          <ThemeToggle />
+      <header className="px-5 pb-2 pt-4">
+        <div className="text-[11px] font-extrabold uppercase tracking-[.12em] text-accent">
+          Knees Over Toes
         </div>
-        <p className="mt-1.5 text-[13px] text-muted">
-          Knee rehab and mobility built on Ben Patrick&apos;s ATG method — full range,
-          ground up, always from a version you can do pain-free.
+        <h1 className="mt-1 font-display text-[28px] font-extrabold tracking-[-.02em]">Rehab</h1>
+        <p className="mt-2 text-[13px] leading-[1.5] text-muted">
+          Knee rehab &amp; mobility on the ATG method — full range, ground up, always pain-free.
         </p>
       </header>
 
@@ -379,14 +372,20 @@ export default function RehabPage() {
 
       {/* ------------------------------- browse ------------------------------- */}
       <div className="mt-5 border-t border-line pt-4">
-        <div className="px-5 pb-3">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search all moves — try “knee cap rehab”…"
-            aria-label="Search rehab exercises"
-            className="w-full rounded-field bg-raised px-3.5 py-2.5 text-[14px] outline-none placeholder:text-muted/70 focus:border-accent"
-          />
+        <div className="sticky top-0 z-10 bg-bg px-5 pb-3">
+          <div className="flex items-center gap-2.5 rounded-[14px] bg-raised px-4 py-3 focus-within:ring-1 focus-within:ring-accent">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-none text-mute">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth={2} />
+              <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+            </svg>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search all moves…"
+              aria-label="Search rehab exercises"
+              className="w-full min-w-0 bg-transparent text-[14px] outline-none placeholder:text-dim"
+            />
+          </div>
         </div>
 
         {!searching && (
