@@ -17,7 +17,7 @@ import { useExerciseHistory, formatKg, formatDayLabel } from "@/lib/history";
 import { useAuth } from "@/lib/auth-context";
 import type { LibraryExercise } from "@/types";
 
-export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void }) {
+export default function DailyTracker({ onOpenBody }: { onOpenBody: () => void }) {
   const { logOut } = useAuth();
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
@@ -140,12 +140,12 @@ export default function DailyTracker({ onOpenPlan }: { onOpenPlan: () => void })
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <button
-              onClick={onOpenPlan}
-              aria-label="Sessions and weekly rhythm"
-              title="Sessions & week"
+              onClick={onOpenBody}
+              aria-label="Your body — BMI, calories and water"
+              title="Your body"
               className="press flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-surface text-[15px] text-dim"
             >
-              🗓
+              ⚖️
             </button>
             <button
               onClick={logOut}

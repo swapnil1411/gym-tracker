@@ -23,5 +23,6 @@ build/
 *.tsbuildinfo
 next-env.d.ts
 
+*.md
 # generated at build time by scripts/build-library.mjs
 /public/library.json

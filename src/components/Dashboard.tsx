@@ -2,9 +2,9 @@
 
 import { useCallback, useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
+import Sheet from "./Sheet";
 import ThemeToggle from "./ThemeToggle";
-import { DAYS, GROUPS, barColor, dateKey } from "@/lib/groups";
-import { indexById, useLibrary } from "@/lib/library";
+import { DAYS, dateKey, parseDateKey } from "@/lib/groups";
 import { useCompletionsRange } from "@/lib/store";
 import { useSchedule, useWorkouts } from "@/lib/workouts";
 import {
@@ -13,11 +13,8 @@ import {
   doneCountFor,
   longestStreak,
   monthGrid,
-  tonnage,
-  volumeByGroup,
   weekDates,
 } from "@/lib/stats";
-import type { MuscleGroup } from "@/types";
 
 const Card = ({
   title,
@@ -32,18 +29,7 @@ const Card = ({
   </section>
 );
 
-function weeklyTonnageSeries(today: Date, tonnageFor: (dates: Date[]) => number) {
-  return Array.from({ length: 8 }, (_, i) => {
-    const end = new Date(today);
-    end.setDate(end.getDate() - (7 - i) * 7);
-    const dates = weekDates(end);
-    return tonnageFor(dates);
-  });
-}
-
 export default function Dashboard() {
-  const { library } = useLibrary();
-  const byId = useMemo(() => indexById(library), [library]);
   const { workouts } = useWorkouts();
   const { resolve } = useSchedule();
 
@@ -94,39 +80,41 @@ export default function Dashboard() {
 
   const thisWeek = useMemo(() => weekDates(today), [today]);
   const cells = useMemo(() => monthGrid(month), [month]);
-  const volume = useMemo(() => volumeByGroup(thisWeek, days, byId), [thisWeek, days, byId]);
-  const weekTonnage = useMemo(() => tonnage(thisWeek, days), [thisWeek, days]);
-  const volumeSeries = useMemo(
-    () => weeklyTonnageSeries(today, (dates) => tonnage(dates, days)),
-    [today, days]
-  );
-  const seriesMax = Math.max(1, ...volumeSeries);
-  const seriesMin = Math.min(...volumeSeries);
-  const range = Math.max(1, seriesMax - seriesMin);
-  const chartPoints = volumeSeries.map((v, i) => {
-    const x = (i / Math.max(1, volumeSeries.length - 1)) * 322;
-    const y = 114 - ((v - seriesMin) / range) * 92;
-    return `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`;
-  });
-  const areaPath = `M0,128 ${chartPoints.map((p) => `L${p}`).join(" ")} L322,128 Z`;
-  const previous = volumeSeries[volumeSeries.length - 2] ?? 0;
-  const latest = volumeSeries[volumeSeries.length - 1] ?? 0;
-  const trend =
-    previous > 0 ? Math.round(((latest - previous) / previous) * 100) : latest > 0 ? 100 : 0;
-  const maxVolume = Math.max(1, ...Object.values(volume));
-  const volumeEntries = Object.entries(volume)
-    .filter(([, v]) => v > 0)
-    .sort((a, b) => b[1] - a[1]);
 
+  /* Every logged day, newest first. The page shows only the first one — the
+     rest are a tap away, so the dashboard stays scannable. */
   const recent = useMemo(
     () =>
       Object.keys(days)
         .filter((k) => doneCountFor(days[k]) > 0)
         .sort()
-        .reverse()
-        .slice(0, 8),
+        .reverse(),
     [days]
   );
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  /** One row of the session history, shared by the card and the sheet. */
+  const SessionRow = ({ dayKey }: { dayKey: string }) => {
+    const d = parseDateKey(dayKey);
+    const label = nameFor(dayKey);
+    const done = doneCountFor(days[dayKey]);
+    const total = totalFor(dayKey) || done;
+    return (
+      <div className="flex items-center justify-between rounded-field bg-raised px-3 py-2.5">
+        <span className="text-[13px] font-semibold">
+          {d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}
+          {label && <span className="text-muted"> · {label}</span>}
+        </span>
+        <span
+          className={`font-display text-[12px] font-bold tabular-nums ${
+            done >= total ? "text-done-text" : "text-muted"
+          }`}
+        >
+          {done}/{total} done
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="flex w-full max-w-app flex-col">
@@ -170,29 +158,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-
-        <Card title="Volume · Last 8 weeks">
-          <div className="mb-2 flex justify-end">
-            <span className={`text-[12px] font-bold ${trend >= 0 ? "text-success" : "text-pr"}`}>
-              {trend >= 0 ? "↑" : "↓"} {Math.abs(trend)}%
-            </span>
-          </div>
-          <svg width="100%" height="128" viewBox="0 0 322 128" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="volGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="rgb(var(--accent))" stopOpacity="0.35" />
-                <stop offset="1" stopColor="rgb(var(--accent))" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            <line x1="0" y1="30" x2="322" y2="30" stroke="rgb(var(--border))" strokeWidth="1" strokeDasharray="3 5" />
-            <line x1="0" y1="70" x2="322" y2="70" stroke="rgb(var(--border))" strokeWidth="1" strokeDasharray="3 5" />
-            <path d={areaPath} fill="url(#volGrad)" />
-            <polyline points={chartPoints.join(" ")} fill="none" stroke="rgb(var(--accent))" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <div className="mt-1 flex justify-between text-[10px] font-semibold text-mute">
-            <span>W1</span><span>W3</span><span>W5</span><span>W7</span><span>Now</span>
-          </div>
-        </Card>
 
         {/* ------------------------------ this week ------------------------------ */}
         <Card title="This week">
@@ -284,95 +249,40 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* -------------------------------- volume ------------------------------- */}
-        <Card title="This week's volume">
-          {volumeEntries.length === 0 ? (
-            <p className="py-4 text-center text-[13px] text-muted">
-              No sets logged yet this week.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {volumeEntries.map(([group, sets]) => {
-                const g = GROUPS[group as MuscleGroup];
-                return (
-                  <div key={group} className="flex items-center gap-2.5">
-                    <span className="w-[68px] flex-none text-[12px] font-semibold text-muted">
-                      {g?.name ?? group}
-                    </span>
-                    <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-raised">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${(sets / maxVolume) * 100}%`,
-                          background: g ? barColor(g.color) : "rgb(var(--muted))",
-                        }}
-                      />
-                    </div>
-                    <span className="w-9 flex-none text-right font-display text-[12px] font-bold tabular-nums">
-                      {sets}
-                    </span>
-                  </div>
-                );
-              })}
-              <div className="mt-1 flex items-baseline justify-between">
-                <p className="text-[11px] text-muted">Sets completed, Mon–Sun.</p>
-                {weekTonnage > 0 && (
-                  <p className="text-[11px] text-muted">
-                    <span className="font-display text-[13px] font-bold text-text">
-                      {weekTonnage.toLocaleString()}
-                    </span>{" "}
-                    kg moved
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </Card>
-
-        {/* ---------------------------- recent sessions --------------------------- */}
-        <Card title="Recent sessions">
+        {/* ----------------------------- last session ---------------------------- */}
+        <Card title="Last session">
           {recent.length === 0 ? (
             <p className="py-4 text-center text-[13px] text-muted">
               Tick off your first exercise to start your history.
             </p>
           ) : (
-            <ul className="flex flex-col gap-2">
-              {recent.map((key) => {
-                const d = new Date(
-                  Number(key.slice(0, 4)),
-                  Number(key.slice(5, 7)) - 1,
-                  Number(key.slice(8, 10))
-                );
-                const label = nameFor(key);
-                const done = doneCountFor(days[key]);
-                const total = totalFor(key) || done;
-                return (
-                  <li
-                    key={key}
-                    className="flex items-center justify-between rounded-field bg-raised px-3 py-2.5"
-                  >
-                    <span className="text-[13px] font-semibold">
-                      {d.toLocaleDateString(undefined, {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}
-                      {label && <span className="text-muted"> · {label}</span>}
-                    </span>
-                    <span
-                      className={`font-display text-[12px] font-bold tabular-nums ${
-                        done >= total ? "text-done-text" : "text-muted"
-                      }`}
-                    >
-                      {done}/{total} done
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+            <>
+              <SessionRow dayKey={recent[0]} />
+              {recent.length > 1 && (
+                <button
+                  onClick={() => setHistoryOpen(true)}
+                  className="press mt-2 w-full rounded-field border border-line py-2.5 text-[12.5px] font-semibold text-accent-text"
+                >
+                  All {recent.length} sessions ›
+                </button>
+              )}
+            </>
           )}
         </Card>
       </div>
+
+      <Sheet
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title="Session history"
+        subtitle={`${recent.length} logged ${recent.length === 1 ? "session" : "sessions"}, newest first.`}
+      >
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-4 pb-8 pt-1">
+          {recent.map((key) => (
+            <SessionRow key={key} dayKey={key} />
+          ))}
+        </div>
+      </Sheet>
     </div>
   );
 }

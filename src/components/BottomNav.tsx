@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-export type Tab = "today" | "plan" | "stats";
+export type Tab = "today" | "body" | "stats";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   {
