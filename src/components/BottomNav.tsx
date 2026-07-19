@@ -2,11 +2,15 @@
 
 import type React from "react";
 
-export type Tab = "today" | "rehab" | "stats" | "body";
+export type Tab = "today" | "rehab" | "sports" | "stats";
 
 /*
- * Four tabs, per the Ergonomic design: Body was promoted out of a header icon
- * on Today, where it was effectively undiscoverable, into the bar itself.
+ * Four tabs — the four things you do daily. Body moved back out to a TopBar
+ * icon to make room for Sports, which is not the reversal it looks like: the
+ * old body icon lived in DailyTracker's header and was only reachable from
+ * Today, whereas TopBar is now persistent on every screen. Body is also a
+ * settings-shaped page you touch weekly, not daily, so it loses the tie for
+ * bar space against something you log after every match.
  */
 const TABS: { id: Tab; label: string; icon: (on: boolean) => React.ReactNode }[] = [
   {
@@ -40,12 +44,13 @@ const TABS: { id: Tab; label: string; icon: (on: boolean) => React.ReactNode }[]
     ),
   },
   {
-    id: "stats",
-    label: "Stats",
+    id: "sports",
+    label: "Sports",
+    // A stopwatch — the one thing running, pickleball and a yoga block share.
     icon: () => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path
-          d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"
+          d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2.5 2M9.5 2h5"
           stroke="currentColor"
           strokeWidth={1.9}
           strokeLinecap="round"
@@ -55,12 +60,12 @@ const TABS: { id: Tab; label: string; icon: (on: boolean) => React.ReactNode }[]
     ),
   },
   {
-    id: "body",
-    label: "Body",
+    id: "stats",
+    label: "Stats",
     icon: () => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
         <path
-          d="M12 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM6 22v-6l-2-1 1.5-5A2 2 0 0 1 7.4 9h9.2a2 2 0 0 1 1.9 1l1.5 5-2 1v6"
+          d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6"
           stroke="currentColor"
           strokeWidth={1.9}
           strokeLinecap="round"

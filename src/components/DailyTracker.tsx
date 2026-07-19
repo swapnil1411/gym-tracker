@@ -13,6 +13,9 @@ import { indexById, useLibrary } from "@/lib/library";
 import { useDayCompletions } from "@/lib/store";
 import { useSchedule, useWorkouts, useLegacyPlanMigration } from "@/lib/workouts";
 import { useExerciseHistory, formatKg, formatDayLabel } from "@/lib/history";
+import { ACTIVITY_BY_ID, liftingKcal, roundKcal } from "@/lib/activities";
+import { useDayActivities } from "@/lib/activity-store";
+import { useBody } from "@/lib/body";
 import type { LibraryExercise } from "@/types";
 
 export default function DailyTracker() {
@@ -63,6 +66,8 @@ export default function DailyTracker() {
 
   const key = dateKey(selectedDate);
   const { entries, toggle, setCompletion } = useDayCompletions(key);
+  const { entries: activities } = useDayActivities(key);
+  const { body } = useBody();
 
   const { workoutIds, isOverride } = resolve(key);
   // A workout can be deleted while dates still point at it.
@@ -87,6 +92,33 @@ export default function DailyTracker() {
     })
     .filter((row) => row.ex && row.previousBest > 0 && row.todayKg >= row.previousBest)
     .sort((a, b) => b.todayKg - a.todayKg)[0];
+
+  /*
+   * What the day cost, broken into blocks: the lifting itself, then every bout
+   * logged on Sports for the same date. Lifting counts sets actually ticked
+   * off rather than planned ones — a session you skipped is not energy spent.
+   */
+  const setsDone = allItems
+    .filter((i) => entries[i.exerciseId]?.done)
+    .reduce((sum, i) => sum + (entries[i.exerciseId]?.setsDone || i.sets), 0);
+  const liftMinutes = Math.max(15, Math.round((setsDone * 3.5) / 5) * 5);
+  const burn = useMemo(() => {
+    const rows: { label: string; kcal: number }[] = [];
+    const lift = liftingKcal(setsDone, body.weightKg);
+    if (lift > 0) {
+      rows.push({
+        label: `${liftMinutes} min ${sessions.map((w) => w.name).join(" + ") || "gym"}`,
+        kcal: lift,
+      });
+    }
+    for (const a of activities) {
+      rows.push({
+        label: `${a.minutes} min ${ACTIVITY_BY_ID.get(a.type)?.label.toLowerCase() ?? a.type}`,
+        kcal: a.kcal,
+      });
+    }
+    return { rows, total: rows.reduce((s, r) => s + r.kcal, 0) };
+  }, [setsDone, liftMinutes, sessions, activities, body.weightKg]);
 
   // Renaming inline only makes sense when there's exactly one session to rename.
   const soleSession = sessions.length === 1 ? sessions[0] : null;
@@ -537,6 +569,36 @@ export default function DailyTracker() {
           </button>
         )}
       </div>
+
+      {/* Energy cost of the day, lifting plus anything logged on Sports. */}
+      {burn.total > 0 && (
+        <div className="px-5 pt-4">
+          <div className="rounded-card border border-line bg-surface p-4">
+            <div className="flex items-baseline justify-between">
+              <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-mute">
+                Approx. burned today
+              </h2>
+              <span className="font-display text-[19px] font-extrabold tabular-nums text-accent">
+                {roundKcal(burn.total)}
+                <span className="ml-1 text-[11px] font-semibold text-mute">kcal</span>
+              </span>
+            </div>
+            <div className="mt-2.5 flex flex-col gap-1.5">
+              {burn.rows.map((r) => (
+                <div key={r.label} className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-[12.5px] font-medium text-dim">{r.label}</span>
+                  <span className="flex-none font-display text-[12.5px] font-bold tabular-nums text-muted">
+                    {roundKcal(r.kcal)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-[11px] leading-[1.5] text-mute">
+              Estimated from your bodyweight — expect it to be within about a fifth.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/*
        * Sticky primary action. `sticky bottom-0` pins it to the bottom of the

@@ -14,6 +14,8 @@ import {
   monthGrid,
   weekDates,
 } from "@/lib/stats";
+import { useActivitiesRange, kcalAcross, kcalOn } from "@/lib/activity-store";
+import { roundKcal } from "@/lib/activities";
 
 const Card = ({
   title,
@@ -73,12 +75,16 @@ export default function Dashboard() {
   }, [month, today]);
 
   const { days } = useCompletionsRange(from, to);
+  // Same date window, second source — the calendar shows both without becoming
+  // a second calendar.
+  const { days: actDays } = useActivitiesRange(from, to);
 
   const streak = currentStreak(days, today);
   const best = longestStreak(days);
 
   const thisWeek = useMemo(() => weekDates(today), [today]);
   const cells = useMemo(() => monthGrid(month), [month]);
+  const weekSportKcal = kcalAcross(actDays, thisWeek);
 
   /* Every logged day, newest first. The page shows only the first one — the
      rest are a tap away, so the dashboard stays scannable. */
@@ -153,6 +159,22 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Only shown once there's something to show — an empty calorie card
+            on a lifting-only week is just a reminder of a feature. */}
+        {weekSportKcal > 0 && (
+          <div className="rounded-[18px] border border-line bg-surface p-4">
+            <div className="flex items-baseline justify-between">
+              <div className="text-[10.5px] font-bold uppercase tracking-[.08em] text-mute">
+                Sport &amp; cardio this week
+              </div>
+              <span className="font-display text-[20px] font-extrabold leading-none tabular-nums text-accent">
+                {roundKcal(weekSportKcal)}
+                <span className="ml-1 text-[11px] font-semibold text-dim">kcal</span>
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* ------------------------------ this week ------------------------------ */}
         <Card title="This week">
           <div className="flex justify-between">
@@ -215,11 +237,14 @@ export default function Dashboard() {
               const frac = completionFraction(key, days, totalFor);
               const isToday = key === dateKey(today);
               const future = d > today;
+              const sportKcal = kcalOn(actDays, d);
               return (
                 <div
                   key={key}
-                  title={`${key} — ${Math.round(frac * 100)}% of plan`}
-                  className="aspect-square rounded-md border text-center"
+                  title={`${key} — ${Math.round(frac * 100)}% of plan${
+                    sportKcal > 0 ? ` · ${roundKcal(sportKcal)} kcal sport` : ""
+                  }`}
+                  className="relative aspect-square rounded-md border text-center"
                   style={{
                     background:
                       frac > 0
@@ -237,6 +262,14 @@ export default function Dashboard() {
                   >
                     {d.getDate()}
                   </span>
+                  {/* Sport sits on the same cell as lifting rather than in its
+                      own grid — one day, one square, however you moved. */}
+                  {sportKcal > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute bottom-[13%] left-1/2 h-[3px] w-[3px] -translate-x-1/2 rounded-full bg-accent"
+                    />
+                  )}
                 </div>
               );
             })}
