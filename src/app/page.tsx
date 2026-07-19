@@ -6,6 +6,7 @@ import BottomNav, { type Tab } from "@/components/BottomNav";
 import DailyTracker from "@/components/DailyTracker";
 import Dashboard from "@/components/Dashboard";
 import BodyPage from "@/components/BodyPage";
+import RehabPage from "@/components/RehabPage";
 import { useAuth } from "@/lib/auth-context";
 
 export default function Home() {
@@ -28,6 +29,7 @@ export default function Home() {
     <div className="app-chrome relative flex h-dvh w-full max-w-app flex-col overflow-hidden pt-5 sm:my-6 sm:h-[812px] sm:rounded-[42px] sm:pt-7">
       <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {tab === "today" && <DailyTracker onOpenBody={() => setTab("body")} />}
+        {tab === "rehab" && <RehabPage />}
         {tab === "body" && <BodyPage onBack={() => setTab("today")} />}
         {tab === "stats" && <Dashboard />}
       </main>

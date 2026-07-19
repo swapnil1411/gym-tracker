@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-export type Tab = "today" | "body" | "stats";
+export type Tab = "today" | "rehab" | "body" | "stats";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   {
@@ -16,6 +16,24 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
           strokeWidth={1.9}
           strokeLinejoin="round"
         />
+      </svg>
+    ),
+  },
+  {
+    id: "rehab",
+    label: "Rehab",
+    icon: (
+      // A bent leg with the joint called out — the knee is the whole point.
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M9 3v6.5a3.5 3.5 0 0 0 3.5 3.5H15"
+          stroke="currentColor"
+          strokeWidth={1.9}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path d="M18 13v8" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" />
+        <circle cx="12.5" cy="13" r="3" stroke="currentColor" strokeWidth={1.9} />
       </svg>
     ),
   },
@@ -48,7 +66,9 @@ export default function BottomNav({
       aria-label="Main"
       className="pb-safe flex-none border-t border-line bg-bg shadow-[0_-16px_32px_-28px_rgba(0,0,0,0.9)] sm:rounded-b-[42px]"
     >
-      <div className="flex items-center justify-center gap-12 px-5 pb-4 pt-5">
+      {/* Three tabs no longer fit at a fixed width on a narrow phone, so they
+          share the bar evenly instead, capped so they don't sprawl on tablet. */}
+      <div className="mx-auto flex max-w-[400px] items-center justify-around px-3 pb-4 pt-5">
         {TABS.map((t) => {
           const on = t.id === active;
           return (
@@ -56,7 +76,7 @@ export default function BottomNav({
               key={t.id}
               onClick={() => onChange(t.id)}
               aria-current={on ? "page" : undefined}
-              className="press flex w-[112px] flex-none flex-col items-center gap-1.5 rounded-2xl px-4 py-2.5"
+              className="press flex flex-1 flex-col items-center gap-1.5 rounded-2xl px-2 py-2.5"
             >
               <span
                 className={`flex leading-none transition ${
