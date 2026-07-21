@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import LogActivitySheet from "./LogActivitySheet";
 import { DAYS, dateKey } from "@/lib/groups";
 import { startOfWeek, weekDates } from "@/lib/stats";
-import { ACTIVITY_BY_ID, liftingKcal, paceLabel, roundKcal } from "@/lib/activities";
+import { ACTIVITY_BY_ID, paceLabel, roundKcal } from "@/lib/activities";
 import { useActivitiesRange, useDayActivities, kcalOn, type ActivityEntry } from "@/lib/activity-store";
+import { computeBurn } from "@/lib/burn";
+import { indexById, useLibrary } from "@/lib/library";
 import { useDayCompletions } from "@/lib/store";
 import { useBody } from "@/lib/body";
 
@@ -19,6 +21,8 @@ import { useBody } from "@/lib/body";
  */
 export default function SportsPage() {
   const { body } = useBody();
+  const { library } = useLibrary();
+  const byId = useMemo(() => indexById(library), [library]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [sheetFor, setSheetFor] = useState<ActivityEntry | null | "new">(null);
 
@@ -41,12 +45,16 @@ export default function SportsPage() {
   const { entries, add, update, remove } = useDayActivities(key);
   const { entries: completions } = useDayCompletions(key);
 
-  // Lifting is derived from what was actually ticked off, not from the plan —
-  // a session you skipped shouldn't show up as calories you spent.
-  const setsDone = Object.values(completions)
-    .filter((e) => e.done)
-    .reduce((sum, e) => sum + (e.setsDone || 0), 0);
-  const gymKcal = roundKcal(liftingKcal(setsDone, body.weightKg));
+  /*
+   * Everything that came from the Today tab — the lifting, plus any cardio
+   * machine inside the session. Passing no activities keeps this to just those
+   * rows; the bouts logged on this page are rendered separately below because
+   * they're editable and these aren't.
+   */
+  const fromToday = useMemo(
+    () => computeBurn({ entries: completions, activities: [], byId, weightKg: body.weightKg }),
+    [completions, byId, body.weightKg]
+  );
 
   const weekSport = dates.reduce((sum, d) => sum + kcalOn(days, d), 0);
   const dayKcal = entries.reduce((sum, e) => sum + e.kcal, 0);
@@ -145,25 +153,30 @@ export default function SportsPage() {
             })}
           </h2>
           <span className="font-display text-[13px] font-extrabold tabular-nums text-accent">
-            {roundKcal(dayKcal + gymKcal)} kcal
+            {roundKcal(dayKcal + fromToday.total)} kcal
           </span>
         </div>
 
         <div className="mt-3 flex flex-col gap-2">
-          {gymKcal > 0 && (
-            <div className="flex items-center gap-3 rounded-card border border-dashed border-line px-3.5 py-3">
-              <span className="text-[19px] leading-none">🏋️</span>
+          {fromToday.rows.map((r) => (
+            <div
+              key={r.key}
+              className="flex items-center gap-3 rounded-card border border-dashed border-line px-3.5 py-3"
+            >
+              <span className="text-[19px] leading-none">{r.key === "lift" ? "🏋️" : "🏃"}</span>
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-bold">Gym session</div>
+                <div className="truncate text-[14px] font-bold first-letter:uppercase">
+                  {r.label}
+                </div>
                 <div className="text-[11.5px] text-muted">
-                  {setsDone} sets logged · from Today
+                  {r.key === "lift" ? `${fromToday.setsDone} sets logged` : "cardio"} · from Today
                 </div>
               </div>
               <span className="font-display text-[15px] font-extrabold tabular-nums">
-                {gymKcal}
+                {roundKcal(r.kcal)}
               </span>
             </div>
-          )}
+          ))}
 
           {entries.map((e) => {
             const def = ACTIVITY_BY_ID.get(e.type);
@@ -191,7 +204,7 @@ export default function SportsPage() {
             );
           })}
 
-          {entries.length === 0 && gymKcal === 0 && (
+          {entries.length === 0 && fromToday.rows.length === 0 && (
             <p className="py-10 text-center text-[13px] leading-relaxed text-muted">
               Nothing logged for this day.
               <br />

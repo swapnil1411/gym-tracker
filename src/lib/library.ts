@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GROUPS } from "./groups";
 import type { Library, LibraryExercise, MuscleGroup } from "@/types";
 
 let cache: Library | null = null;
@@ -68,7 +69,14 @@ export function searchLibrary(
     .filter((ex) => {
       if (group !== "all" && ex.group !== group) return false;
       if (!words.length) return true;
-      const hay = `${ex.name} ${ex.equipment ?? ""}`.toLowerCase();
+      /*
+       * The group name is part of the haystack so that searching "cardio",
+       * "legs" or "yoga" returns that group. Every one of those is a word
+       * someone will type, and matching only exercise names meant the most
+       * obvious query in the box returned an empty screen — the chips were the
+       * only way in, and they scroll out of sight.
+       */
+      const hay = `${ex.name} ${ex.equipment ?? ""} ${GROUPS[ex.group].name}`.toLowerCase();
       return words.every((w) => hay.includes(w));
     })
     .sort((a, b) => {

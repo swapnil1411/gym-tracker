@@ -1,10 +1,14 @@
 "use client";
 
 import { useMemo } from "react";
-import { GROUPS } from "@/lib/groups";
+import { GROUPS, dateKey } from "@/lib/groups";
+import { roundKcal } from "@/lib/activities";
+import { useDayBurn } from "@/lib/burn";
 import {
   ACTIVITY,
   GOALS,
+  NON_EXERCISE_FACTOR,
+  burnForDay,
   computeMetrics,
   useBody,
   type Activity,
@@ -140,6 +144,8 @@ function Segmented<T extends string>({
 export default function BodyPage() {
   const { body, update } = useBody();
   const m = useMemo(() => computeMetrics(body), [body]);
+  const burn = useDayBurn(dateKey(new Date()));
+  const vsMaintenance = m ? burnForDay(m.bmr, burn.total) - m.tdee : 0;
 
   return (
     <div className="flex w-full max-w-app flex-col">
@@ -313,7 +319,7 @@ export default function BodyPage() {
               <div className="mt-2.5 grid grid-cols-3 gap-2">
                 {[
                   ["Resting", `${Math.round(m.bmr)}`, "kcal"],
-                  ["Burned/day", `${Math.round(m.tdee)}`, "kcal"],
+                  ["Maintenance", `${roundKcal(m.tdee)}`, "kcal"],
                   ["Protein", `${Math.round(m.proteinG)}`, "g"],
                 ].map(([label, value, unit]) => (
                   <div key={label} className="rounded-field bg-raised px-2.5 py-2.5 text-center">
@@ -329,8 +335,62 @@ export default function BodyPage() {
               </div>
 
               <p className="mt-3 text-[11.5px] leading-[1.5] text-muted">
-                Mifflin-St Jeor, ×{ACTIVITY[body.activity].factor} for activity. It is an
-                estimate — weigh yourself weekly and adjust if the trend isn&apos;t moving.
+                Mifflin-St Jeor, ×{ACTIVITY[body.activity].factor} for activity. Maintenance is
+                what you burn on an average day — eat that and your weight holds. It is an
+                estimate: weigh yourself weekly and adjust if the trend isn&apos;t moving.
+              </p>
+            </Card>
+
+            {/* ---------------------------- today's burn ---------------------------- */}
+            <Card title="Burned today">
+              <div className="flex items-end justify-between">
+                <div className="font-display text-[40px] font-bold leading-none tabular-nums">
+                  {roundKcal(burnForDay(m.bmr, burn.total))}
+                  <span className="ml-1.5 text-[13px] font-semibold text-dim">kcal</span>
+                </div>
+                <div className="pb-1 text-right">
+                  {/* Not tinted green/red: --success as 13px text measures
+                      3.46:1 on the light surface, under AA. The sign carries
+                      the direction on its own. */}
+                  <div className="text-[13px] font-bold">
+                    {vsMaintenance >= 0 ? "+" : "−"}
+                    {roundKcal(Math.abs(vsMaintenance))} kcal
+                  </div>
+                  <div className="text-[11px] text-muted">vs maintenance</div>
+                </div>
+              </div>
+
+              <div className="mt-3.5 flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-[12.5px] font-medium text-dim">
+                    Just being awake (×{NON_EXERCISE_FACTOR})
+                  </span>
+                  <span className="flex-none font-display text-[12.5px] font-bold tabular-nums text-muted">
+                    {roundKcal(m.baseline)}
+                  </span>
+                </div>
+                {burn.rows.map((r) => (
+                  <div key={r.key} className="flex items-baseline justify-between gap-3">
+                    <span className="truncate text-[12.5px] font-medium text-dim first-letter:uppercase">
+                      {r.label}
+                    </span>
+                    <span className="flex-none font-display text-[12.5px] font-bold tabular-nums text-muted">
+                      {roundKcal(r.kcal)}
+                    </span>
+                  </div>
+                ))}
+                {burn.rows.length === 0 && (
+                  <p className="text-[12.5px] text-muted">
+                    Nothing trained yet today — this is a rest-day figure.
+                  </p>
+                )}
+              </div>
+
+              <p className="mt-3 text-[11.5px] leading-[1.5] text-muted">
+                Two routes to the same number, so don&apos;t add them together. Maintenance
+                guesses your training from the activity setting above; this counts the sessions
+                you actually logged. On a rest day it lands below maintenance, on a hard day
+                above — which is the useful part.
               </p>
             </Card>
 

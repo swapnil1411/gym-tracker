@@ -46,6 +46,27 @@ export const GOALS: Record<Goal, { label: string; hint: string; delta: number }>
   gain: { label: "Build muscle", hint: "+10%", delta: 0.1 },
 };
 
+/**
+ * Living, minus training: BMR plus the cost of being awake, walking around and
+ * digesting, with no session in it. This is the "sedentary" multiplier, and it
+ * is the honest base to add *measured* training onto — the activity multipliers
+ * above already contain an assumed amount of exercise, so adding today's logged
+ * burn to the TDEE would count the same session twice.
+ */
+export const NON_EXERCISE_FACTOR = 1.2;
+
+/**
+ * What today actually cost, given what was logged.
+ *
+ * A second estimate of the same quantity as `tdee`, arrived at from the other
+ * direction: TDEE guesses your training from a five-way activity picker, while
+ * this one reads it off the sessions you ticked. On a rest day it lands below
+ * maintenance; on a hard day, above. They are alternatives, never addends.
+ */
+export function burnForDay(bmr: number, exerciseKcal: number): number {
+  return bmr * NON_EXERCISE_FACTOR + exerciseKcal;
+}
+
 export interface BodyMetrics {
   bmi: number;
   category: string;
@@ -53,8 +74,10 @@ export interface BodyMetrics {
   healthyRange: [number, number];
   /** Mifflin-St Jeor resting burn. */
   bmr: number;
-  /** BMR × activity — what you burn on an average day. */
+  /** BMR × activity — maintenance, i.e. what you burn on an average day. */
   tdee: number;
+  /** BMR × 1.2 — the same day with no training in it at all. */
+  baseline: number;
   /** TDEE adjusted for the chosen goal. */
   calories: number;
   proteinG: number;
@@ -104,6 +127,7 @@ export function computeMetrics(p: BodyProfile): BodyMetrics | null {
     healthyRange: [18.5 * m * m, 24.9 * m * m],
     bmr,
     tdee,
+    baseline: bmr * NON_EXERCISE_FACTOR,
     calories,
     proteinG,
     waterMl,

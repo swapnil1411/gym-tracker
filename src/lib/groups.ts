@@ -24,6 +24,9 @@ export const GROUPS: Record<MuscleGroup, GroupMeta> = {
   biceps: { name: "Biceps", color: "#f76b15", inkLight: "#cc4e00", inkDark: "#ffa057", icon: "💪" },
   triceps: { name: "Triceps", color: "#d6409f", inkLight: "#c2298a", inkDark: "#ff8dcc", icon: "🔻" },
   core: { name: "Core", color: "#bdee63", inkLight: "#5c7c2f", inkDark: "#bde56c", icon: "🌀" },
+  // Radix grass, at the same step 9/11 as the rest. Distinct from the jade
+  // used for "done" and from mobility's teal, which sit either side of it.
+  cardio: { name: "Cardio", color: "#46a758", inkLight: "#2a7e3b", inkDark: "#71d083", icon: "🏃" },
   mobility: { name: "Mobility", color: "#12a594", inkLight: "#008573", inkDark: "#0bd8b6", icon: "🧘" },
   yoga: { name: "Yoga", color: "#8e4ec6", inkLight: "#8145b5", inkDark: "#d19dff", icon: "☯️" },
 };

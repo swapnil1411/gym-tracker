@@ -30,6 +30,10 @@ const config: Config = {
         surface2: "rgb(var(--surface2) / <alpha-value>)",
         surface3: "rgb(var(--surface3) / <alpha-value>)",
         "accent-ghost": "rgb(var(--accent-ghost) / <alpha-value>)",
+        // --accent2 was defined in globals.css but never mapped, so every
+        // `border-accent2` in the app was silently falling back to
+        // currentColor. The pale accent hairline is what the design asked for.
+        accent2: "rgb(var(--accent2) / <alpha-value>)",
         success: "rgb(var(--success) / <alpha-value>)",
         success2: "rgb(var(--success2) / <alpha-value>)",
         pr: "rgb(var(--pr) / <alpha-value>)",

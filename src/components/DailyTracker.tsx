@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ProgressRing from "./ProgressRing";
 import Thumb from "./Thumb";
 import ExerciseDetail from "./ExerciseDetail";
@@ -13,10 +13,19 @@ import { indexById, useLibrary } from "@/lib/library";
 import { useDayCompletions } from "@/lib/store";
 import { useSchedule, useWorkouts, useLegacyPlanMigration } from "@/lib/workouts";
 import { useExerciseHistory, formatKg, formatDayLabel } from "@/lib/history";
-import { ACTIVITY_BY_ID, liftingKcal, roundKcal } from "@/lib/activities";
+import { roundKcal } from "@/lib/activities";
 import { useDayActivities } from "@/lib/activity-store";
+import { computeBurn } from "@/lib/burn";
+import {
+  cardioDefaults,
+  cardioFromItem,
+  cardioKcal,
+  cardioMeta,
+  cardioSummary,
+  isCardio,
+} from "@/lib/cardio";
 import { useBody } from "@/lib/body";
-import type { LibraryExercise } from "@/types";
+import type { LibraryExercise, PlanItem } from "@/types";
 
 export default function DailyTracker() {
   const { library } = useLibrary();
@@ -49,6 +58,13 @@ export default function DailyTracker() {
 
   const todayIdx = toMondayIndex(new Date().getDay());
   const [selected, setSelected] = useState(todayIdx);
+  /*
+   * Weeks back from the current one. The tracker used to be pinned to this
+   * week, which made a session you forgot to tick unreachable — the data was
+   * there, there was just no way to steer to the date. Forward is capped at 0:
+   * the current week already includes every future day it can plan for.
+   */
+  const [weekOffset, setWeekOffset] = useState(0);
   const [editing, setEditing] = useState(false);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [logTarget, setLogTarget] = useState<{ w: string; ex: string } | null>(null);
@@ -58,11 +74,16 @@ export default function DailyTracker() {
 
   // The strip selects a date within the current week; completions are keyed to
   // real dates so streaks and history stay honest.
-  const selectedDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + (selected - todayIdx));
-    return d;
-  }, [selected, todayIdx]);
+  const dateAt = useCallback(
+    (weekdayIdx: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + (weekdayIdx - todayIdx) + weekOffset * 7);
+      return d;
+    },
+    [todayIdx, weekOffset]
+  );
+
+  const selectedDate = useMemo(() => dateAt(selected), [dateAt, selected]);
 
   const key = dateKey(selectedDate);
   const { entries, toggle, setCompletion } = useDayCompletions(key);
@@ -75,12 +96,27 @@ export default function DailyTracker() {
   const allItems = sessions.flatMap((w) => w.items);
 
   const doneCount = allItems.filter((i) => entries[i.exerciseId]?.done).length;
-  const isFuture = selectedDate > new Date() && key !== dateKey(new Date());
-  const totalSets = allItems.reduce((sum, item) => sum + item.sets, 0);
+  const todayKey = dateKey(new Date());
+  const isToday = key === todayKey;
+  const isPast = key < todayKey;
+  const isFuture = key > todayKey;
+  /*
+   * Cardio is planned in minutes, not sets, so it can't go through the
+   * ≈3.5 min-per-set estimate — a 30-minute bike counts as one "set" and would
+   * shrink the day's estimate instead of lengthening it. Its minutes are added
+   * on directly.
+   */
+  const totalSets = allItems
+    .filter((i) => !isCardio(byId.get(i.exerciseId)))
+    .reduce((sum, item) => sum + item.sets, 0);
+  const cardioMinutes = allItems
+    .filter((i) => isCardio(byId.get(i.exerciseId)))
+    .reduce((sum, i) => sum + cardioFromItem(i, byId.get(i.exerciseId)).minutes, 0);
   const nextOpen = sessions
     .flatMap((w) => w.items.map((item) => ({ workoutId: w.id, item })))
     .find(({ item }) => !entries[item.exerciseId]?.done);
-  const estimatedMinutes = Math.max(15, Math.round((totalSets * 3.5) / 5) * 5);
+  const estimatedMinutes =
+    (totalSets > 0 ? Math.max(15, Math.round((totalSets * 3.5) / 5) * 5) : 0) + cardioMinutes;
   const prTarget = sessions
     .flatMap((w) => w.items.map((item) => ({ workoutId: w.id, item, ex: byId.get(item.exerciseId) })))
     .map((row) => {
@@ -94,31 +130,15 @@ export default function DailyTracker() {
     .sort((a, b) => b.todayKg - a.todayKg)[0];
 
   /*
-   * What the day cost, broken into blocks: the lifting itself, then every bout
-   * logged on Sports for the same date. Lifting counts sets actually ticked
-   * off rather than planned ones — a session you skipped is not energy spent.
+   * What the day cost: the lifting, any cardio machine inside the session, and
+   * every bout logged on Sports for the same date. Shared with the Body page so
+   * the two screens can't quote different numbers for the same day.
    */
-  const setsDone = allItems
-    .filter((i) => entries[i.exerciseId]?.done)
-    .reduce((sum, i) => sum + (entries[i.exerciseId]?.setsDone || i.sets), 0);
-  const liftMinutes = Math.max(15, Math.round((setsDone * 3.5) / 5) * 5);
-  const burn = useMemo(() => {
-    const rows: { label: string; kcal: number }[] = [];
-    const lift = liftingKcal(setsDone, body.weightKg);
-    if (lift > 0) {
-      rows.push({
-        label: `${liftMinutes} min ${sessions.map((w) => w.name).join(" + ") || "gym"}`,
-        kcal: lift,
-      });
-    }
-    for (const a of activities) {
-      rows.push({
-        label: `${a.minutes} min ${ACTIVITY_BY_ID.get(a.type)?.label.toLowerCase() ?? a.type}`,
-        kcal: a.kcal,
-      });
-    }
-    return { rows, total: rows.reduce((s, r) => s + r.kcal, 0) };
-  }, [setsDone, liftMinutes, sessions, activities, body.weightKg]);
+  const gymLabel = sessions.map((w) => w.name).join(" + ");
+  const burn = useMemo(
+    () => computeBurn({ entries, activities, byId, weightKg: body.weightKg, gymLabel }),
+    [entries, activities, byId, body.weightKg, gymLabel]
+  );
 
   // Renaming inline only makes sense when there's exactly one session to rename.
   const soleSession = sessions.length === 1 ? sessions[0] : null;
@@ -208,15 +228,23 @@ export default function DailyTracker() {
               {DAYS[selected].full}
               {" · "}
               {selectedDate.toLocaleDateString(undefined, { day: "numeric", month: "short" })}
-              {selected === todayIdx && " · today"}
-              {isOverride && <span className="ml-1.5">· today only</span>}
+              {isToday && " · today"}
+              {isOverride && <span className="ml-1.5">· this date only</span>}
             </div>
+            {/* Paging back is for filling in what you forgot to tick, so say so
+                rather than leaving a past date looking like a broken today. */}
+            {isPast && (
+              <div className="mt-1 text-[12px] font-semibold text-accent-text">
+                Catching up on {formatDayLabel(key)} — logs save to that date.
+              </div>
+            )}
             {/* The volume/duration figures the accent hero card used to carry —
                 kept, because they answer "how long will this take". */}
             {allItems.length > 0 && (
               <div className="mt-1 text-[12.5px] font-medium text-mute">
-                {allItems.length} {allItems.length === 1 ? "exercise" : "exercises"} ·{" "}
-                {totalSets} sets · ~{estimatedMinutes} min
+                {allItems.length} {allItems.length === 1 ? "exercise" : "exercises"}
+                {totalSets > 0 && ` · ${totalSets} sets`}
+                {cardioMinutes > 0 && ` · ${cardioMinutes} min cardio`} · ~{estimatedMinutes} min
               </div>
             )}
           </div>
@@ -234,15 +262,39 @@ export default function DailyTracker() {
         />
       </header>
 
+      {/* ------------------------------- week pager --------------------------------- */}
+      <div className="flex items-center justify-between gap-2 px-5 pt-4">
+        <button
+          onClick={() => setWeekOffset((w) => Math.max(-52, w - 1))}
+          aria-label="Previous week"
+          className="press flex h-8 w-8 flex-none items-center justify-center rounded-xl border border-line bg-surface text-dim"
+        >
+          ‹
+        </button>
+        <div className="text-[11px] font-bold uppercase tracking-[.08em] text-mute">
+          {weekOffset === 0
+            ? "This week"
+            : `Week of ${dateAt(0).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`}
+        </div>
+        <button
+          onClick={() => setWeekOffset((w) => Math.min(0, w + 1))}
+          disabled={weekOffset >= 0}
+          aria-label="Next week"
+          className="press flex h-8 w-8 flex-none items-center justify-center rounded-xl border border-line bg-surface text-dim disabled:opacity-30"
+        >
+          ›
+        </button>
+      </div>
+
       {/* --------------------------------- day pills -------------------------------- */}
-      <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1.5 pt-4">
+      <div className="no-scrollbar flex gap-2 overflow-x-auto px-5 pb-1.5 pt-2.5">
         {DAYS.map((d, i) => {
-          const dd = new Date();
-          dd.setDate(dd.getDate() + (i - todayIdx));
+          const dd = dateAt(i);
           const ids = resolve(dateKey(dd)).workoutIds;
           const names = ids.map((id) => workouts[id]?.name).filter(Boolean);
           const label = names.length ? names.join(" + ") : "rest";
           const active = i === selected;
+          const isToday = weekOffset === 0 && i === todayIdx;
           return (
             <button
               key={d.key}
@@ -255,7 +307,9 @@ export default function DailyTracker() {
                 active ? "border-accent bg-accent-ghost text-accent" : "border-line bg-surface text-text"
               }`}
             >
-              {d.label}
+              {/* The date, not just the weekday: once you can page back, "MON"
+                  alone no longer says which Monday you're looking at. */}
+              {d.label} {dd.getDate()}
               <small
                 className={`mt-1 block max-w-[78px] truncate font-body text-[11px] font-medium capitalize tracking-normal ${
                   active ? "text-accent" : "text-mute"
@@ -263,7 +317,7 @@ export default function DailyTracker() {
               >
                 {label}
               </small>
-              {i === todayIdx && (
+              {isToday && (
                 <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-bg bg-success" />
               )}
             </button>
@@ -353,6 +407,17 @@ export default function DailyTracker() {
               const shownReps = isDone ? entry?.repsDone ?? item.reps : item.reps;
               const shownKg = isDone ? entry?.weightKg ?? item.weightKg : item.weightKg;
 
+              const cardio = isCardio(ex);
+              const planned = cardioFromItem(item, ex);
+              const shownCardio = {
+                minutes: (isDone ? entry?.minutesDone : undefined) || planned.minutes,
+                speedKmh: (isDone ? entry?.speedKmh : undefined) ?? planned.speedKmh,
+                inclinePct: (isDone ? entry?.inclinePct : undefined) ?? planned.inclinePct,
+              };
+              const rowKcal = isDone
+                ? entry?.kcal ?? 0
+                : cardioKcal(shownCardio, ex, body.weightKg);
+
               return (
                 <div
                   key={item.exerciseId}
@@ -381,7 +446,16 @@ export default function DailyTracker() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!isFuture) toggle(item.exerciseId, item);
+                        if (isFuture) return;
+                        // Ticking a cardio row straight off the list has to
+                        // snapshot its minutes and its calories too, or the
+                        // day's burn would silently miss it.
+                        toggle(
+                          item.exerciseId,
+                          cardio
+                            ? { sets: 1, reps: 0, weightKg: 0, ...shownCardio, kcal: rowKcal }
+                            : item
+                        );
                       }}
                       disabled={isFuture}
                       aria-pressed={isDone}
@@ -431,31 +505,88 @@ export default function DailyTracker() {
                       </span>
                       {editing ? (
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <Stepper
-                            label="sets"
-                            value={item.sets}
-                            suffix=" sets"
-                            onChange={(sets) => updateItem(w.id, item.exerciseId, { sets })}
-                          />
-                          <Stepper
-                            label="reps"
-                            value={item.reps}
-                            suffix=" reps"
-                            max={200}
-                            onChange={(reps) => updateItem(w.id, item.exerciseId, { reps })}
-                          />
-                          <Stepper
-                            label="weight"
-                            value={item.weightKg}
-                            suffix=" kg"
-                            min={0}
-                            max={500}
-                            step={2.5}
-                            onChange={(weightKg) =>
-                              updateItem(w.id, item.exerciseId, { weightKg })
-                            }
-                          />
+                          {cardio ? (
+                            <>
+                              <Stepper
+                                label="minutes"
+                                value={planned.minutes}
+                                suffix=" min"
+                                min={1}
+                                max={240}
+                                onChange={(minutes) =>
+                                  updateItem(w.id, item.exerciseId, { minutes })
+                                }
+                              />
+                              {cardioMeta(ex).mode === "treadmill" && (
+                                <>
+                                  <Stepper
+                                    label="speed"
+                                    value={planned.speedKmh}
+                                    suffix=" km/h"
+                                    min={0.5}
+                                    max={22}
+                                    step={0.5}
+                                    onChange={(speedKmh) =>
+                                      updateItem(w.id, item.exerciseId, { speedKmh })
+                                    }
+                                  />
+                                  <Stepper
+                                    label="incline"
+                                    value={planned.inclinePct}
+                                    suffix="%"
+                                    min={0}
+                                    max={40}
+                                    onChange={(inclinePct) =>
+                                      updateItem(w.id, item.exerciseId, { inclinePct })
+                                    }
+                                  />
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <Stepper
+                                label="sets"
+                                value={item.sets}
+                                suffix=" sets"
+                                onChange={(sets) => updateItem(w.id, item.exerciseId, { sets })}
+                              />
+                              <Stepper
+                                label="reps"
+                                value={item.reps}
+                                suffix=" reps"
+                                max={200}
+                                onChange={(reps) => updateItem(w.id, item.exerciseId, { reps })}
+                              />
+                              <Stepper
+                                label="weight"
+                                value={item.weightKg}
+                                suffix=" kg"
+                                min={0}
+                                max={500}
+                                step={2.5}
+                                onChange={(weightKg) =>
+                                  updateItem(w.id, item.exerciseId, { weightKg })
+                                }
+                              />
+                            </>
+                          )}
                         </div>
+                      ) : cardio ? (
+                        /* Minutes, speed and gradient — the three numbers a
+                           treadmill actually has. Sets and reps describe
+                           nothing here, and kg is always zero. */
+                        <span className="text-[12.5px] font-semibold text-dim">
+                          {cardioSummary(shownCardio, ex)}
+                          {rowKcal > 0 && (
+                            <>
+                              {" · "}
+                              <span className="font-semibold text-text">
+                                ≈{roundKcal(rowKcal)} kcal
+                              </span>
+                            </>
+                          )}
+                        </span>
                       ) : (
                         <span className="text-[12.5px] font-semibold text-dim">
                           {shownSets} × {shownReps}
@@ -472,13 +603,24 @@ export default function DailyTracker() {
                     </div>
 
                     {/* What you managed last time you did this move. */}
-                    {!editing && h && h.lastOn && h.lastKg > 0 && (
+                    {!editing && h && h.lastOn && (cardio ? h.lastMinutes > 0 : h.lastKg > 0) && (
                       <div className="mt-1 text-[11.5px] text-mute">
                         Last time{" "}
-                        <b className="font-semibold text-dim">{formatKg(h.lastKg)}kg</b>
+                        <b className="font-semibold text-dim">
+                          {cardio
+                            ? cardioSummary(
+                                {
+                                  minutes: h.lastMinutes,
+                                  speedKmh: h.lastSpeedKmh,
+                                  inclinePct: h.lastInclinePct,
+                                },
+                                ex
+                              )
+                            : `${formatKg(h.lastKg)}kg`}
+                        </b>
                         {" · "}
                         {formatDayLabel(h.lastOn)}
-                        {h.bestKg > h.lastKg && <> · best {formatKg(h.bestKg)}kg</>}
+                        {!cardio && h.bestKg > h.lastKg && <> · best {formatKg(h.bestKg)}kg</>}
                       </div>
                     )}
                   </div>
@@ -576,7 +718,7 @@ export default function DailyTracker() {
           <div className="rounded-card border border-line bg-surface p-4">
             <div className="flex items-baseline justify-between">
               <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-mute">
-                Approx. burned today
+                Approx. burned {isToday ? "today" : "this day"}
               </h2>
               <span className="font-display text-[19px] font-extrabold tabular-nums text-accent">
                 {roundKcal(burn.total)}
@@ -585,7 +727,7 @@ export default function DailyTracker() {
             </div>
             <div className="mt-2.5 flex flex-col gap-1.5">
               {burn.rows.map((r) => (
-                <div key={r.label} className="flex items-baseline justify-between gap-3">
+                <div key={r.key} className="flex items-baseline justify-between gap-3">
                   <span className="truncate text-[12.5px] font-medium text-dim">{r.label}</span>
                   <span className="flex-none font-display text-[12.5px] font-bold tabular-nums text-muted">
                     {roundKcal(r.kcal)}
@@ -632,7 +774,17 @@ export default function DailyTracker() {
       <ExercisePicker
         open={pickerFor !== null}
         onClose={() => setPickerFor(null)}
-        onAdd={(id) => pickerFor && addExercise(pickerFor, id)}
+        onAdd={(id) => {
+          if (!pickerFor) return;
+          // A cardio move arrives prescribed in minutes at a sane speed and
+          // gradient, not as 3 × 10 at 0 kg.
+          const ex = byId.get(id);
+          addExercise(
+            pickerFor,
+            id,
+            isCardio(ex) ? { sets: 1, reps: 0, weightKg: 0, ...cardioDefaults(ex) } : undefined
+          );
+        }}
         onRemove={(id) => pickerFor && removeExercise(pickerFor, id)}
         existingIds={
           new Set(pickerFor ? workouts[pickerFor]?.items.map((i) => i.exerciseId) ?? [] : [])
@@ -648,21 +800,30 @@ export default function DailyTracker() {
         entry={logTarget ? entries[logTarget.ex] : undefined}
         history={logTarget ? history.get(logTarget.ex) : undefined}
         isDone={logTarget ? Boolean(entries[logTarget.ex]?.done) : false}
-        onSave={({ sets, reps, weightKg, markDone }) => {
+        onSave={({ markDone, ...v }) => {
           if (!logTarget) return;
           /*
            * Only advance the template when this is the newest session for the
            * exercise. Editing last Monday after training on Friday is a
            * correction to that day's record — letting it rewrite the plan would
-           * undo Friday's progression.
+           * undo Friday's progression. This matters more now that you can page
+           * back weeks and backfill.
            */
           const latest = history.get(logTarget.ex)?.latestOn;
           if (!latest || key >= latest) {
-            updateItem(logTarget.w, logTarget.ex, { sets, reps, weightKg });
+            const patch: Partial<PlanItem> = {
+              sets: v.sets,
+              reps: v.reps,
+              weightKg: v.weightKg,
+            };
+            if (v.minutes !== undefined) patch.minutes = v.minutes;
+            if (v.speedKmh !== undefined) patch.speedKmh = v.speedKmh;
+            if (v.inclinePct !== undefined) patch.inclinePct = v.inclinePct;
+            updateItem(logTarget.w, logTarget.ex, patch);
           }
           // …and record what was actually done on this date.
           if (markDone || entries[logTarget.ex]?.done) {
-            setCompletion(logTarget.ex, { done: true, sets, reps, weightKg });
+            setCompletion(logTarget.ex, { ...v, done: true });
           }
         }}
       />

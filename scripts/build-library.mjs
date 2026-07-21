@@ -131,8 +131,16 @@ async function loadFreeExerciseDb() {
 
   for (const ex of raw) {
     const isStretch = ex.category === "stretching";
+    /*
+     * Cardio is its own group, taken from the source's own category rather than
+     * from primaryMuscles. Every treadmill, bike and rower in the set lists
+     * "quadriceps", which filed them under Legs — so searching "cardio", or
+     * tapping a Cardio chip, found nothing, and a treadmill walk sat in a leg
+     * session asking for sets, reps and a weight in kg.
+     */
+    const isCardio = ex.category === "cardio";
     const primary = (ex.primaryMuscles || [])[0];
-    const group = isStretch ? "mobility" : MUSCLE_TO_GROUP[primary];
+    const group = isCardio ? "cardio" : isStretch ? "mobility" : MUSCLE_TO_GROUP[primary];
 
     // Drop anything we can't place in a group the UI knows how to render.
     if (!group) continue;

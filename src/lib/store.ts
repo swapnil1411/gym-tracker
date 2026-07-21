@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { getDb } from "./firebase";
 import { useAuth } from "./auth-context";
-import type { DayCompletions, PlanDay, PlanItem } from "@/types";
+import type { CompletionEntry, DayCompletions, PlanDay, PlanItem } from "@/types";
 import { DAYS, dateKey } from "./groups";
 
 const DEFAULT_FOCUS = [
@@ -144,6 +144,45 @@ export function usePlan() {
 
 /* ----------------------------- completions -------------------------------- */
 
+/**
+ * What a completion records. The cardio half is optional: a treadmill bout has
+ * minutes, speed, gradient and a calorie cost; a bench press has none of them.
+ */
+export interface LoggedValues {
+  sets: number;
+  reps: number;
+  weightKg: number;
+  minutes?: number;
+  speedKmh?: number;
+  inclinePct?: number;
+  kcal?: number;
+}
+
+/**
+ * One entry, ready to merge.
+ *
+ * Un-ticking zeroes the numbers rather than deleting them, as it always has.
+ * Optional cardio fields are omitted entirely when absent — Firestore rejects
+ * an explicit `undefined`, and writing them as 0 on a strength exercise would
+ * make it look like cardio to `computeBurn`, which keys off `kcal` being set.
+ */
+function buildEntry(done: boolean, v: LoggedValues): CompletionEntry {
+  const entry: CompletionEntry = {
+    done,
+    // Snapshot what was actually done. Changing the plan next week must not
+    // retroactively alter this session's numbers.
+    setsDone: done ? v.sets : 0,
+    repsDone: done ? v.reps : 0,
+    weightKg: done ? v.weightKg : 0,
+    at: new Date().toISOString(),
+  };
+  if (v.minutes !== undefined) entry.minutesDone = done ? v.minutes : 0;
+  if (v.speedKmh !== undefined) entry.speedKmh = v.speedKmh;
+  if (v.inclinePct !== undefined) entry.inclinePct = v.inclinePct;
+  if (v.kcal !== undefined) entry.kcal = done ? v.kcal : 0;
+  return entry;
+}
+
 /** Live completions for a single calendar date (YYYY-MM-DD). */
 export function useDayCompletions(dayKey: string) {
   const { user } = useAuth();
@@ -161,26 +200,14 @@ export function useDayCompletions(dayKey: string) {
   }, [user, dayKey]);
 
   const toggle = useCallback(
-    async (exerciseId: string, item: { sets: number; reps: number; weightKg: number }) => {
+    async (exerciseId: string, item: LoggedValues) => {
       if (!user) return;
       const ref = doc(getDb(), "users", user.uid, "completions", dayKey);
       const isDone = !entries[exerciseId]?.done;
       // setDoc+merge rather than updateDoc: the day doc may not exist yet.
       await setDoc(
         ref,
-        {
-          entries: {
-            [exerciseId]: {
-              done: isDone,
-              // Snapshot what was actually lifted. Changing the plan next week
-              // must not retroactively alter this session's numbers.
-              setsDone: isDone ? item.sets : 0,
-              repsDone: isDone ? item.reps : 0,
-              weightKg: isDone ? item.weightKg : 0,
-              at: new Date().toISOString(),
-            },
-          },
-        },
+        { entries: { [exerciseId]: buildEntry(isDone, item) } },
         { merge: true }
       );
     },
@@ -189,24 +216,11 @@ export function useDayCompletions(dayKey: string) {
 
   /** Write an exact completion — used by the per-exercise log screen. */
   const setCompletion = useCallback(
-    async (
-      exerciseId: string,
-      v: { done: boolean; sets: number; reps: number; weightKg: number }
-    ) => {
+    async (exerciseId: string, v: LoggedValues & { done: boolean }) => {
       if (!user) return;
       await setDoc(
         doc(getDb(), "users", user.uid, "completions", dayKey),
-        {
-          entries: {
-            [exerciseId]: {
-              done: v.done,
-              setsDone: v.done ? v.sets : 0,
-              repsDone: v.done ? v.reps : 0,
-              weightKg: v.done ? v.weightKg : 0,
-              at: new Date().toISOString(),
-            },
-          },
-        },
+        { entries: { [exerciseId]: buildEntry(v.done, v) } },
         { merge: true }
       );
     },

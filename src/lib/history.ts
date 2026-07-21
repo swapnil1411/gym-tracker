@@ -19,6 +19,18 @@ export interface ExerciseHistory {
    * plan needs to know if anything newer already exists.
    */
   latestOn: string | null;
+  /**
+   * The cardio equivalent of lastKg — what you last did on the machine. Kept on
+   * the same record rather than in a parallel map: it is the same question
+   * ("what did I do last time?") asked of a different kind of exercise, and one
+   * pass over the completions answers both.
+   */
+  lastMinutes: number;
+  lastSpeedKmh: number;
+  lastInclinePct: number;
+  lastKcal: number;
+  /** Best single cardio bout by calories, and when. */
+  bestKcal: number;
   /** How many separate days this exercise has been logged. */
   sessions: number;
   /** Every logged session, oldest first — the series behind the chart. */
@@ -40,6 +52,11 @@ const empty = (): ExerciseHistory => ({
   lastSets: 0,
   lastOn: null,
   latestOn: null,
+  lastMinutes: 0,
+  lastSpeedKmh: 0,
+  lastInclinePct: 0,
+  lastKcal: 0,
+  bestKcal: 0,
   sessions: 0,
   points: [],
 });
@@ -83,12 +100,17 @@ export function useExerciseHistory(windowDays = 365) {
           h.bestKg = kg;
           h.bestOn = key;
         }
+        if ((entry.kcal ?? 0) > h.bestKcal) h.bestKcal = entry.kcal ?? 0;
         // Today's own entry isn't "history" — it's what you're doing now.
         if (key !== todayKey) {
           h.lastKg = kg;
           h.lastReps = entry.repsDone ?? 0;
           h.lastSets = entry.setsDone ?? 0;
           h.lastOn = key;
+          h.lastMinutes = entry.minutesDone ?? 0;
+          h.lastSpeedKmh = entry.speedKmh ?? 0;
+          h.lastInclinePct = entry.inclinePct ?? 0;
+          h.lastKcal = entry.kcal ?? 0;
         }
         h.latestOn = key;
         h.sessions += 1;

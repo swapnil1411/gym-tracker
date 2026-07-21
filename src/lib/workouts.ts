@@ -143,11 +143,23 @@ export function useWorkouts() {
     [user]
   );
 
+  /**
+   * `defaults` lets the caller seed a cardio item with minutes/speed/gradient
+   * instead of the 3×10 a strength move gets. The caller decides because it is
+   * the one holding the library — this hook only knows exercise ids.
+   */
   const addExercise = useCallback(
-    async (id: string, exerciseId: string, sets = 3, reps = 10, weightKg = 0) => {
+    async (id: string, exerciseId: string, defaults?: Partial<PlanItem>) => {
       const w = workouts[id];
       if (!w || w.items.some((i) => i.exerciseId === exerciseId)) return;
-      const item: PlanItem = { exerciseId, sets, reps, weightKg, order: w.items.length };
+      const item: PlanItem = {
+        exerciseId,
+        sets: 3,
+        reps: 10,
+        weightKg: 0,
+        ...defaults,
+        order: w.items.length,
+      };
       await save({ ...w, items: [...w.items, item] });
     },
     [workouts, save]

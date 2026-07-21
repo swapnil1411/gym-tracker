@@ -91,6 +91,42 @@ export function inclineWalkMets(speedKmh: number, gradePct: number): number {
   return vo2 / 3.5;
 }
 
+/**
+ * ACSM running equation: VO₂ = 0.2·S + 0.9·S·G + 3.5.
+ *
+ * The walking equation above is only validated to about 6.4 km/h; past that
+ * people jog, the mechanics change, and applying the walking formula badly
+ * overstates the cost. Running carries roughly twice the horizontal coefficient
+ * and half the gradient one — you pay more per metre but less per percent.
+ */
+export function runMets(speedKmh: number, gradePct: number): number {
+  const mPerMin = (speedKmh * 1000) / 60;
+  const vo2 = 0.2 * mPerMin + 0.9 * mPerMin * (gradePct / 100) + 3.5;
+  return vo2 / 3.5;
+}
+
+/**
+ * The right ACSM equation for a treadmill bout, chosen by speed.
+ *
+ * The walking equation is validated to 6.4 km/h (4 mph) and the running one
+ * from 8 km/h (5 mph); in between, people are doing something the guidelines
+ * don't cover, and the two formulas disagree sharply — 4.0 METs against 7.1 at
+ * the same 6.4 km/h. Switching hard at a threshold would mean one tap of the
+ * speed stepper nearly doubling the calorie figure, which reads as a bug and
+ * would make the number untrustworthy exactly where people spend their time.
+ *
+ * So the gap is crossed by blending the two. It is an interpolation, not a
+ * published equation, but it is continuous and it is bounded by two values that
+ * *are* published — which is the best available answer for a speed neither
+ * formula claims.
+ */
+export function treadmillMets(speedKmh: number, gradePct: number): number {
+  if (speedKmh <= 6.4) return inclineWalkMets(speedKmh, gradePct);
+  if (speedKmh >= 8) return runMets(speedKmh, gradePct);
+  const t = (speedKmh - 6.4) / 1.6;
+  return inclineWalkMets(6.4, gradePct) * (1 - t) + runMets(8, gradePct) * t;
+}
+
 export interface ActivityInput {
   type: string;
   minutes: number;

@@ -6,6 +6,7 @@ export type MuscleGroup =
   | "biceps"
   | "triceps"
   | "core"
+  | "cardio"
   | "mobility"
   | "yoga";
 
@@ -29,7 +30,16 @@ export interface Library {
   exercises: LibraryExercise[];
 }
 
-/** An exercise as placed in a workout. */
+/**
+ * An exercise as placed in a workout.
+ *
+ * sets/reps/weightKg are the strength prescription. The three optional fields
+ * below are the cardio one — a treadmill bout is a duration at a speed and a
+ * gradient, and asking it for "3 × 10 at 0kg" describes nothing. They stay
+ * optional rather than becoming a separate item type because everything else
+ * about an item (ordering, membership, the completion it produces) is identical,
+ * and a discriminated union would fork every call site for no gain.
+ */
 export interface PlanItem {
   exerciseId: string;
   sets: number;
@@ -37,6 +47,12 @@ export interface PlanItem {
   /** Working weight in kg. 0 means bodyweight / not tracked. */
   weightKg: number;
   order: number;
+  /** Cardio: minutes on the machine. */
+  minutes?: number;
+  /** Cardio: treadmill/bike speed in km/h. */
+  speedKmh?: number;
+  /** Cardio: treadmill gradient as a percentage. */
+  inclinePct?: number;
 }
 
 /**
@@ -93,6 +109,18 @@ export interface CompletionEntry {
    *  later edits to the plan never rewrite past sessions. */
   repsDone?: number;
   weightKg?: number;
+  /** Cardio, snapshotted the same way. */
+  minutesDone?: number;
+  speedKmh?: number;
+  inclinePct?: number;
+  /**
+   * Cardio calories, frozen at completion time — the same invariant the
+   * activities collection follows. Every model scales with bodyweight, so
+   * recomputing on read would let updating your weight silently rewrite what
+   * last month's sessions cost. Its presence is also what marks an entry as
+   * cardio when reading completions without the library to hand.
+   */
+  kcal?: number;
   at: string;
 }
 
