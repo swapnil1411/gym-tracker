@@ -187,6 +187,18 @@ export function liftingKcal(totalSets: number, weightKg: number | null): number 
   return kcalFromMets(5.0, minutes, weightKg);
 }
 
+/**
+ * Everyday steps, costed with the same walking model the distance activities
+ * use: 0.53 kcal per kg per km, at an average stride of ~0.76 m. Deliberately
+ * the *gross* walking figure rather than net-of-resting — steps are logged as a
+ * lump at day's end, and splitting out the resting share of a number this
+ * approximate would be false precision.
+ */
+export function stepsKcal(steps: number, weightKg: number | null): number {
+  if (!weightKg || weightKg <= 0 || steps <= 0) return 0;
+  return 0.53 * weightKg * steps * 0.00076;
+}
+
 /** Rounded the way an estimate deserves to be: nearest 5 under 100, else 10. */
 export function roundKcal(kcal: number): number {
   if (kcal <= 0) return 0;

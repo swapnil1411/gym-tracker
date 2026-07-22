@@ -23,6 +23,9 @@ export const GROUPS: Record<MuscleGroup, GroupMeta> = {
   shoulders: { name: "Shoulders", color: "#00a2c7", inkLight: "#107d98", inkDark: "#4ccce6", icon: "🤸" },
   biceps: { name: "Biceps", color: "#f76b15", inkLight: "#cc4e00", inkDark: "#ffa057", icon: "💪" },
   triceps: { name: "Triceps", color: "#d6409f", inkLight: "#c2298a", inkDark: "#ff8dcc", icon: "🔻" },
+  // Radix brown — the only warm neutral left that doesn't collide with
+  // biceps' orange or legs' amber.
+  forearms: { name: "Forearms", color: "#ad7f58", inkLight: "#815e46", inkDark: "#dbb594", icon: "🦾" },
   core: { name: "Core", color: "#bdee63", inkLight: "#5c7c2f", inkDark: "#bde56c", icon: "🌀" },
   // Radix grass, at the same step 9/11 as the rest. Distinct from the jade
   // used for "done" and from mobility's teal, which sit either side of it.

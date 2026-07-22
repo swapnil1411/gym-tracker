@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GymLog — Log exercise sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="dark"]{
+  --bg:21 24 30;--surface:28 32 41;--surface2:36 41 53;--surface3:44 49 61;
+  --border:47 53 66;--text:243 245 248;--dim:162 171 187;--mute:107 115 133;
+  --accent:78 120 220;--accent2:39 52 82;--accent-ghost:25 33 49;--on-accent:255 255 255;
+  --success:48 187 126;--success2:20 51 40;--on-success:255 255 255;
+  --pr:210 160 68;--pr2:36 31 17;
+  --tag-alpha:.14;
+  --lift-strong:0 14px 30px -12px rgb(var(--accent) / .42);
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:244 246 250;--surface:255 255 255;--surface2:238 241 246;--surface3:226 231 240;
+  --border:226 231 240;--text:26 32 48;--dim:90 100 120;--mute:138 147 166;
+  --accent:61 99 221;--accent2:196 209 247;--accent-ghost:238 242 253;--on-accent:255 255 255;
+  --success:26 157 106;--success2:223 243 233;--on-success:255 255 255;
+  --pr:200 138 26;--pr2:248 239 219;
+  --tag-alpha:.16;
+  --lift-strong:0 14px 30px -14px rgb(var(--accent) / .45);
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:rgb(var(--bg));color:rgb(var(--text))}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 0%, rgb(var(--surface3)) 0%, rgb(var(--bg)) 60%, rgb(16 18 22) 100%)}
+[data-theme="light"] body::before{
+  background:radial-gradient(120% 90% at 50% 0%, rgb(255 255 255) 0%, rgb(var(--bg)) 58%, rgb(var(--surface3)) 100%)}
+body{font-family:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  display:flex;justify-content:center;min-height:100dvh;padding:24px 0;
+  transition:background-color .2s ease,color .2s ease}
+.display{font-family:'Space Grotesk',system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font-size:16px}
+.no-scrollbar{scrollbar-width:none}.no-scrollbar::-webkit-scrollbar{display:none}
+.tabular{font-variant-numeric:tabular-nums}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ------ phone frame ------ */
+.phone{position:relative;display:flex;flex-direction:column;width:100%;max-width:460px;height:812px;
+  border-radius:42px;overflow:hidden;background:rgb(var(--bg));
+  box-shadow:0 40px 90px -20px rgba(0,0,0,.55),0 0 0 1px rgb(var(--border))}
+@media(max-width:480px){body{padding:0}.phone{height:100dvh;max-width:none;border-radius:0}}
+
+/* ------ top bar ------ */
+.topbar{display:flex;height:56px;flex:none;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgb(var(--border));background:rgb(var(--bg));padding:0 20px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .mark{width:26px;height:26px;border-radius:8px;background:rgb(var(--accent));
+  color:rgb(var(--on-accent));display:flex;align-items:center;justify-content:center}
+.brand .word{font-family:'Space Grotesk';font-size:15px;font-weight:800;letter-spacing:.09em}
+.topbar .actions{display:flex;align-items:center;gap:8px}
+.iconbtn{width:40px;height:40px;border-radius:12px;border:1px solid rgb(var(--border));
+  background:rgb(var(--surface));color:rgb(var(--dim));display:flex;align-items:center;justify-content:center}
+.iconbtn.on{border-color:rgb(var(--accent));background:rgb(var(--accent));color:rgb(var(--on-accent))}
+
+/* ------ scroll area & bottom nav ------ */
+main.page{min-height:0;flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.nav{flex:none;border-top:1px solid rgb(var(--border));background:rgb(var(--bg))}
+.nav .tabs{display:flex;align-items:stretch;padding:10px 8px 12px}
+.navbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  padding:6px 0;background:none;border:0;border-radius:16px;color:rgb(var(--mute))}
+.navbtn .lbl{font-size:10.5px;letter-spacing:.04em;font-weight:600}
+.navbtn.on{color:rgb(var(--accent))}
+.navbtn.on .lbl{font-weight:800}
+
+/* ------ page headers ------ */
+.kick{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgb(var(--accent))}
+h1.pagetitle{margin:4px 0 0;font-family:'Space Grotesk';font-size:28px;font-weight:800;letter-spacing:-.02em}
+.sub{margin:8px 0 0;font-size:13px;line-height:1.5;color:rgb(var(--dim))}
+
+/* ------ cards ------ */
+.card{border-radius:18px;border:1px solid rgb(var(--border));background:rgb(var(--surface));padding:16px}
+.cardtitle{margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgb(var(--mute))}
+.cardbody{margin-top:12px}
+.note{margin:12px 0 0;font-size:11.5px;line-height:1.5;color:rgb(var(--dim))}
+.footnote{font-size:11px;line-height:1.55;color:rgb(var(--mute))}
+
+/* ------ shared controls ------ */
+.cta{height:56px;width:100%;border:0;border-radius:16px;background:rgb(var(--accent));
+  color:rgb(var(--on-accent));font-size:16px;font-weight:800;display:flex;align-items:center;
+  justify-content:center;gap:10px;box-shadow:var(--lift-strong)}
+.stickyfoot{position:sticky;bottom:0;z-index:8;margin-top:auto;
+  background:linear-gradient(to top, rgb(var(--bg)) 55%, transparent);padding:28px 20px 12px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pagerbtn{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:12px;border:1px solid rgb(var(--border));background:rgb(var(--surface));color:rgb(var(--dim))}
+.pagerbtn[disabled]{opacity:.3}
+.pagerlbl{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgb(var(--mute))}
+.tag{display:inline-block;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.segbtn{flex:1;border-radius:12px;border:1px solid rgb(var(--border));background:rgb(var(--surface2));
+  color:rgb(var(--dim));padding:8px 12px;text-align:center}
+.segbtn.on{border-color:rgb(var(--accent));background:rgb(var(--accent));color:rgb(var(--on-accent))}
+.segbtn .l{display:block;white-space:nowrap;font-size:13px;font-weight:700}
+.segbtn .h{display:block;margin-top:2px;font-size:10px;font-weight:600;opacity:.7}
+
+/* ------ Today ------ */
+.sessionhead{padding:12px 20px 16px}
+.sessionrow{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.sessiontitle{font-family:'Space Grotesk';font-size:clamp(28px,8vw,34px);font-weight:700;
+  line-height:1.05;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.dateline{margin-top:6px;font-size:14px;font-weight:500;letter-spacing:.01em;color:rgb(var(--dim))}
+.countline{margin-top:4px;font-size:12.5px;font-weight:500;color:rgb(var(--mute))}
+.sliderlabel{display:flex;align-items:center;justify-content:space-between;margin:20px 2px 6px}
+.sliderlabel .t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgb(var(--mute))}
+.sliderlabel .rest{font-size:11px;font-weight:600;color:rgb(var(--dim));background:none;border:0}
+.slider{display:flex;align-items:stretch;gap:8px}
+.slidertrack{display:flex;flex:1;gap:12px;overflow-x:auto;border-radius:16px;scroll-snap-type:x mandatory}
+.slidecard{display:flex;height:58px;width:100%;flex:none;scroll-snap-align:center;flex-direction:column;
+  align-items:center;justify-content:center;border-radius:16px;border:1px solid rgb(var(--border));
+  background:rgb(var(--surface));color:rgb(var(--dim))}
+.slidecard.on{border-color:rgb(var(--accent));background:rgb(var(--accent));
+  color:rgb(var(--on-accent));box-shadow:var(--lift-strong)}
+.slidecard .n{display:flex;max-width:100%;align-items:center;gap:6px;padding:0 20px;
+  font-size:17px;font-weight:900;letter-spacing:-.01em}
+.slidecard .s{font-size:11px;font-weight:600;opacity:.75}
+.slideadd{width:58px;flex:none;display:flex;align-items:center;justify-content:center;border-radius:16px;
+  border:1px solid rgb(var(--border));background:rgb(var(--surface));color:rgb(var(--dim));font-size:24px;line-height:1}
+.dots{margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px}
+.dots i{display:block;height:6px;width:6px;border-radius:99px;background:rgb(var(--border))}
+.dots i.live{width:20px;background:rgb(var(--accent))}
+.dots i.sel{background:rgb(var(--accent) / .5)}
+.daypills{display:flex;gap:8px;overflow-x:auto;padding:10px 20px 6px}
+.daypill{position:relative;min-width:104px;flex:none;border-radius:14px;border:1px solid rgb(var(--border));
+  background:rgb(var(--surface));color:rgb(var(--text));padding:12px 14px;text-align:left;
+  font-family:'Space Grotesk';font-size:13px;font-weight:700;letter-spacing:.04em}
+.daypill.on{border-color:rgb(var(--accent));background:rgb(var(--accent-ghost));color:rgb(var(--accent))}
+.daypill small{display:block;margin-top:4px;max-width:78px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-family:'Hanken Grotesk';font-size:11px;font-weight:500;letter-spacing:0;
+  text-transform:capitalize;color:rgb(var(--mute))}
+.daypill.on small{color:rgb(var(--accent))}
+.daypill .todaydot{position:absolute;right:-4px;top:-4px;height:12px;width:12px;border-radius:99px;
+  border:2px solid rgb(var(--bg));background:rgb(var(--success))}
+.editlink{padding:6px 0;font-size:12.5px;font-weight:600;color:rgb(var(--dim));background:none;border:0}
+.listhead{display:flex;align-items:center;justify-content:space-between;padding-top:4px}
+.listhead .t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:rgb(var(--mute))}
+.listhead .c{font-size:12.5px;font-weight:700;color:rgb(var(--accent))}
+.exlist{display:flex;flex:1;flex-direction:column;gap:12px;padding:10px 20px 16px}
+.exrow{position:relative;display:flex;align-items:center;gap:12px;overflow:hidden;border-radius:16px;
+  border:1px solid rgb(var(--border));background:rgb(var(--surface));padding:14px;cursor:pointer}
+.exrow.done{border-color:rgb(var(--success));background:rgb(var(--success2))}
+.tick{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:13px;border:2px solid rgb(var(--surface3));background:transparent}
+.tick.on{border-color:rgb(var(--success));background:rgb(var(--success))}
+.exmain{min-width:0;flex:1}
+.exname{font-size:15.5px;font-weight:600;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exrow.done .exname{color:rgb(var(--dim));text-decoration:line-through;text-decoration-color:rgb(var(--success))}
+.exmeta{margin-top:4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.exnums{font-size:12.5px;font-weight:600;color:rgb(var(--dim))}
+.exnums b{font-weight:600;color:rgb(var(--text))}
+.exlast{margin-top:4px;font-size:11.5px;color:rgb(var(--mute))}
+.exlast b{font-weight:600;color:rgb(var(--dim))}
+.chev{flex:none;color:rgb(var(--mute))}
+.addex{margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:16px;
+  border:1.5px dashed rgb(var(--border));background:none;padding:15px 0;font-size:14px;font-weight:600;color:rgb(var(--dim))}
+.prbanner{display:flex;align-items:center;gap:12px;border-radius:16px;
+  border:1px solid rgb(var(--pr) / .25);background:rgb(var(--pr2));padding:14px 16px;text-align:left}
+.prbanner .ic{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:11px;background:rgb(var(--pr));color:#1c1206}
+.prbanner .t{font-size:13px;font-weight:800;color:rgb(var(--pr))}
+.prbanner .d{margin-top:2px;font-size:12.5px;font-weight:500;color:rgb(var(--dim));
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.burnrow{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.burnrow .l{font-size:12.5px;font-weight:500;color:rgb(var(--dim));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.burnrow .v{flex:none;font-family:'Space Grotesk';font-size:12.5px;font-weight:700;color:rgb(var(--dim))}
+
+/* ------ Stats ------ */
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.statnum{margin-top:8px;font-family:'Space Grotesk';font-size:34px;font-weight:700;line-height:1}
+.statnum small{margin-left:4px;font-size:13px;font-weight:600;color:rgb(var(--dim))}
+.stattitle{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgb(var(--mute))}
+.weekrings{display:flex;justify-content:space-between}
+.weekrings .d{display:flex;flex-direction:column;align-items:center;gap:6px}
+.weekrings .lbl{font-family:'Space Grotesk';font-size:10px;font-weight:700;letter-spacing:.08em;color:rgb(var(--dim))}
+.weekrings .lbl.today{color:rgb(var(--accent))}
+.monthhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.monthhead .m{font-family:'Space Grotesk';font-size:14px;font-weight:700}
+.monthhead button{width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  border-radius:12px;border:1px solid rgb(var(--border));background:none;color:rgb(var(--dim))}
+.monthhead button[disabled]{opacity:.25}
+.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.heat .dow{text-align:center;font-family:'Space Grotesk';font-size:9px;font-weight:700;
+  letter-spacing:.06em;color:rgb(var(--dim))}
+.heat .cell{position:relative;aspect-ratio:1;border-radius:6px;border:1px solid transparent;text-align:center}
+.heat .cell span{display:block;padding-top:15%;font-size:9px;font-weight:600}
+.heat .cell .sport{position:absolute;bottom:13%;left:50%;height:3px;width:3px;
+  transform:translateX(-50%);border-radius:99px;background:rgb(var(--accent))}
+.sessrow{display:flex;align-items:center;justify-content:space-between;border-radius:12px;
+  background:rgb(var(--surface2));padding:10px 12px}
+.sessrow .l{font-size:13px;font-weight:600}
+.sessrow .l i{font-style:normal;color:rgb(var(--dim))}
+.sessrow .v{font-family:'Space Grotesk';font-size:12px;font-weight:700}
+.sessrow .v.ok{color:rgb(var(--success))}
+.sessrow .v.part{color:rgb(var(--dim))}
+.allbtn{margin-top:8px;width:100%;border-radius:12px;border:1px solid rgb(var(--border));
+  background:none;padding:10px 0;font-size:12.5px;font-weight:600;color:rgb(var(--accent))}
+
+/* ------ Sports ------ */
+.herokcal{margin-top:12px;border-radius:20px;background:rgb(var(--accent));color:rgb(var(--on-accent));padding:14px 16px}
+.herokcal .t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.75}
+.herokcal .v{margin-top:4px;font-family:'Space Grotesk';font-size:36px;font-weight:700;line-height:1}
+.herokcal .v small{margin-left:6px;font-size:13px;font-weight:600;opacity:.75}
+.weekstrip{margin-top:12px;display:flex;gap:6px;padding:0 20px}
+.wday{display:flex;flex:1;flex-direction:column;align-items:center;gap:4px;border-radius:12px;
+  border:1px solid rgb(var(--border));background:rgb(var(--surface2));padding:8px 0}
+.wday .l{font-size:9.5px;font-weight:700;color:rgb(var(--mute))}
+.wday .n{font-family:'Space Grotesk';font-size:14px;font-weight:800}
+.wday .dot{height:6px;width:6px;border-radius:99px;background:transparent}
+.wday .dot.on{background:rgb(var(--accent))}
+.wday.on{border-color:rgb(var(--accent));background:rgb(var(--accent));color:rgb(var(--on-accent))}
+.wday.on .l{color:inherit;opacity:.75}
+.wday.on .dot.on{background:rgb(var(--on-accent))}
+.dayhead{display:flex;align-items:baseline;justify-content:space-between}
+.dayhead .t{margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgb(var(--mute))}
+.dayhead .v{font-family:'Space Grotesk';font-size:13px;font-weight:800;color:rgb(var(--accent))}
+.actrow{display:flex;align-items:center;gap:12px;border-radius:20px;border:1px solid rgb(var(--border));
+  background:rgb(var(--surface));padding:12px 14px;text-align:left}
+.actrow.ghost{border-style:dashed;background:none}
+.actrow .emoji{font-size:19px;line-height:1}
+.actrow .main{min-width:0;flex:1}
+.actrow .n{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.actrow .d{font-size:11.5px;color:rgb(var(--dim));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.actrow .kcal{font-family:'Space Grotesk';font-size:15px;font-weight:800}
+.actrow .kcal.accent{color:rgb(var(--accent))}
+
+/* ------ Body ------ */
+.measure{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.measure .l{font-size:14px;font-weight:600}
+.measure .ctrls{display:flex;align-items:center;gap:12px}
+.mbtn{width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:11px;border:0;font-size:22px;line-height:1}
+.mbtn.minus{border:1px solid rgb(var(--border));background:rgb(var(--surface2));color:rgb(var(--dim))}
+.mbtn.plus{background:rgb(var(--accent));color:rgb(var(--on-accent))}
+.mval{display:flex;min-width:74px;align-items:baseline;justify-content:center;gap:4px}
+.mval b{font-family:'Space Grotesk';font-size:18px;font-weight:800}
+.mval span{font-size:12px;font-weight:600;color:rgb(var(--mute))}
+.bignum{display:flex;align-items:flex-end;justify-content:space-between}
+.bignum .v{font-family:'Space Grotesk';font-size:40px;font-weight:700;line-height:1}
+.bignum .v small{margin-left:6px;font-size:13px;font-weight:600;color:rgb(var(--dim))}
+.bignum .side{padding-bottom:4px;text-align:right}
+.bignum .side .a{font-size:14px;font-weight:700}
+.bignum .side .b{font-size:11px;color:rgb(var(--dim))}
+.bmiscale{position:relative;margin-top:16px}
+.bmibar{display:flex;height:10px;overflow:hidden;border-radius:99px}
+.bmimark{position:absolute;top:-4px;width:3px;height:18px;transform:translateX(-50%);
+  border-radius:99px;background:rgb(var(--text))}
+.bmilabels{margin-top:6px;display:flex;justify-content:space-between;
+  font-size:9.5px;font-weight:600;color:rgb(var(--mute))}
+.actpick{display:flex;flex-direction:column;gap:6px}
+.actopt{display:flex;align-items:center;justify-content:space-between;border-radius:12px;
+  border:1px solid rgb(var(--border));background:rgb(var(--surface2));padding:10px 14px;text-align:left}
+.actopt.on{border-color:rgb(var(--accent));background:rgb(var(--accent));color:rgb(var(--on-accent))}
+.actopt .a{display:block;font-size:13.5px;font-weight:700}
+.actopt .b{display:block;font-size:11px;color:rgb(var(--dim))}
+.actopt.on .b{color:inherit;opacity:.75}
+.actopt .f{font-family:'Space Grotesk';font-size:12px;font-weight:700;opacity:.7}
+.intakehero{border-radius:12px;background:rgb(var(--accent));color:rgb(var(--on-accent));padding:14px 16px}
+.intakehero .t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.75}
+.intakehero .v{margin-top:4px;font-family:'Space Grotesk';font-size:36px;font-weight:700;line-height:1}
+.intakehero .v small{margin-left:6px;font-size:13px;font-weight:600;opacity:.75}
+.tiles{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{border-radius:12px;background:rgb(var(--surface2));padding:10px;text-align:center}
+.tile .t{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:rgb(var(--mute))}
+.tile .v{margin-top:4px;font-family:'Space Grotesk';font-size:17px;font-weight:700;line-height:1}
+.tile .v small{margin-left:2px;font-size:10px;font-weight:600;color:rgb(var(--dim))}
+
+/* ------ Rehab ------ */
+.rehabrow{display:flex;align-items:center;gap:4px;border-radius:20px;border:1px solid rgb(var(--border));
+  background:rgb(var(--surface));padding-right:6px}
+.rehabrow .open{display:flex;min-width:0;flex:1;align-items:center;gap:12px;background:none;border:0;
+  padding:12px 0 12px 14px;text-align:left}
+.rehabrow .n{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rehabrow .t{display:block;margin-top:2px;font-size:11.5px;color:rgb(var(--dim));
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lvltag{flex:none;border-radius:6px;padding:2px 6px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.06em}
+.searchbox{display:flex;align-items:center;gap:10px;border-radius:14px;background:rgb(var(--surface2));padding:12px 16px}
+.searchbox input{width:100%;min-width:0;background:none;border:0;outline:none;color:inherit;font-size:14px}
+.searchbox input::placeholder{color:rgb(var(--dim))}
+.searchbox svg{flex:none;color:rgb(var(--mute))}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 20px;
+  mask-image:linear-gradient(to right,transparent,#000 14px,#000 calc(100% - 14px),transparent);
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 14px,#000 calc(100% - 14px),transparent)}
+.chip{height:36px;flex:none;border-radius:99px;border:0;background:rgb(var(--surface2));
+  color:rgb(var(--dim));padding:0 14px;font-size:13px;font-weight:600;white-space:nowrap}
+.chip.on{background:rgb(var(--accent));color:rgb(var(--on-accent));box-shadow:var(--lift-strong)}
+.listcard{display:flex;align-items:center;gap:12px;border-radius:20px;border:1px solid rgb(var(--border));
+  background:rgb(var(--surface));padding:12px 14px;text-align:left}
+.listcard .n{display:block;font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.listcard .c{display:block;margin-top:2px;font-size:11.5px;color:rgb(var(--dim))}
+.ghostbtn{width:100%;border-radius:12px;border:1px solid rgb(var(--accent) / .4);
+  background:rgb(var(--accent) / .1);padding:10px 0;font-size:12.5px;font-weight:600;color:rgb(var(--accent))}
+
+.scrim{position:absolute;inset:0;z-index:20;background:rgba(0,0,0,.6);backdrop-filter:blur(3px)}
+.sheet{position:absolute;bottom:0;left:50%;transform:translateX(-50%);z-index:30;display:flex;
+  max-height:82%;width:100%;flex-direction:column;border-radius:28px 28px 0 0;
+  background:rgb(var(--surface));border:1px solid rgb(var(--border));border-bottom:0}
+.sheet .grab{margin:10px auto 4px;height:4px;width:36px;border-radius:2px;background:rgb(var(--border))}
+.sheet .close{position:absolute;right:8px;top:8px;width:44px;height:44px;display:flex;align-items:center;
+  justify-content:center;border:0;background:none;border-radius:99px;font-size:19px;line-height:1;color:rgb(var(--dim))}
+.sheet h3{margin:6px 20px 2px;padding-right:48px;font-family:'Space Grotesk';font-size:19px;font-weight:800}
+.sheet .subt{margin:0 20px 12px;padding-right:48px;font-size:13px;color:rgb(var(--dim))}
+.sheet .sbody{flex:1;overflow-y:auto;padding:0 16px 32px}
+.panel{border-radius:20px;background:rgb(var(--surface2));padding:16px}
+.paneltitle{margin:0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgb(var(--dim))}
+.ghostcard{border-radius:20px;border:1px solid rgb(var(--accent2));background:rgb(var(--accent-ghost));padding:14px 16px}
+.ghostcard .t{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:rgb(var(--accent))}
+.ghostcard p{margin:6px 0 0;font-size:13px;color:rgb(var(--dim))}
+.ghostcard b{font-weight:700;color:rgb(var(--text))}
+.steplg{display:flex;align-items:center;gap:14px}
+.steplg .minus{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:12px;border:1px solid rgb(var(--border));background:rgb(var(--surface));
+  color:rgb(var(--dim));font-size:24px;line-height:1}
+.steplg .plus{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;
+  border-radius:12px;border:0;background:rgb(var(--accent));color:rgb(var(--on-accent));font-size:24px;line-height:1}
+.steplg .val{min-width:4.6rem;text-align:center;font-family:'Space Grotesk';font-size:17px;font-weight:800}
+.steplg .val span{color:rgb(var(--mute));font-weight:800}
+.lrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lrow>.l{font-size:14px;font-weight:600}
+.dashbtn{width:100%;border-radius:12px;border:1px dashed rgb(var(--border));background:none;
+  padding:10px 0;font-size:13px;font-weight:600;color:rgb(var(--dim))}
+.sheetcta{margin-top:16px;height:56px;width:100%;border:0;border-radius:16px;background:rgb(var(--accent));
+  color:rgb(var(--on-accent));font-size:16px;font-weight:800;box-shadow:var(--lift-strong)}
+.sheetcta.done{background:rgb(var(--success));color:rgb(var(--on-success))}
+.quietbtn{margin-top:8px;width:100%;border-radius:12px;border:1px solid rgb(var(--border));background:none;
+  padding:10px 0;font-size:13px;font-weight:600;color:rgb(var(--dim))}
+.thumb{flex:none;display:flex;align-items:center;justify-content:center;border-radius:14px;
+  background:rgb(var(--surface3));font-size:20px;line-height:1}
+.pickrow{display:flex;align-items:center;gap:12px;border-radius:20px;background:rgb(var(--surface2));padding:10px 12px}
+.addbtn{flex:none;border-radius:12px;border:0;background:rgb(var(--accent));color:rgb(var(--on-accent));
+  padding:8px 14px;font-size:13px;font-weight:700;box-shadow:var(--lift-strong)}
+.addedbtn{flex:none;border-radius:12px;border:1px solid rgb(var(--success) / .4);
+  background:rgb(var(--success) / .1);color:rgb(var(--success));padding:8px 14px;font-size:13px;font-weight:700}
+.authinput{width:100%;border-radius:12px;border:0;background:rgb(var(--surface2));padding:14px 16px;
+  font-size:15px;color:rgb(var(--text));outline:none}
+.authinput::placeholder{color:rgb(var(--mute))}
+</style>
+</head>
+<body>
+<div class="phone">
+  <header class="topbar">
+    <div class="brand"><div class="mark"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 7v10M17.5 7v10M6.5 12h11M4 9.5v5M20 9.5v5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></div><div class="word">GYMLOG</div></div>
+    <div class="actions">
+      <button class="iconbtn" aria-label="Your body" title="Your body"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5zM6 22v-6l-2-1 1.5-5A2 2 0 0 1 7.4 9h9.2a2 2 0 0 1 1.9 1l1.5 5-2 1v6"/></svg></button>
+      <button class="iconbtn" id="themeBtn" aria-label="Toggle theme" title="Toggle theme"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+      <button class="iconbtn" aria-label="Log out" title="Log out"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></button>
+    </div>
+  </header>
+  <main class="page">
+
+    <header class="sessionhead">
+      <div class="sessionrow">
+        <div style="min-width:0">
+          <div class="sessiontitle">Push
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top:4px;flex:none;color:rgb(var(--mute))" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.1 2.1 0 0 0-3-3L5 17v3z"/></svg>
+          </div>
+          <div class="dateline">Wednesday · 22 Jul · today</div>
+          <div class="countline">5 exercises · 13 sets · 20 min cardio · ~65 min</div>
+        </div>
+        <div style="position:relative;flex:none;width:56px;height:56px" role="img" aria-label="2 of 5 exercises complete">
+    <svg width="56" height="56" viewBox="0 0 56 56" style="transform:rotate(-90deg)">
+      <circle cx="28" cy="28" r="23" fill="none" stroke-width="6" stroke="rgb(var(--border))"/>
+      <circle cx="28" cy="28" r="23" fill="none" stroke-width="6" stroke="rgb(var(--accent))" stroke-linecap="round" stroke-dasharray="144.5" stroke-dashoffset="86.7"/>
+    </svg>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+      <b class="display" style="font-size:15px;font-weight:800;line-height:1">2/5</b>
+      <span style="margin-top:2px;font-size:9px;letter-spacing:.12em;color:rgb(var(--dim))">DONE</span>
+    </div>
+  </div>
+      </div>
+
+      <div class="sliderlabel">
+        <span class="t">Today's session</span>
+        <button class="rest">Rest day</button>
+      </div>
+      <div class="slider">
+        <div class="slidertrack no-scrollbar" role="listbox" aria-multiselectable="true" aria-label="Sessions for this day">
+          <button class="slidecard on" role="option" aria-selected="true">
+            <span class="n"><span aria-hidden="true">✓</span> Push</span>
+            <span class="s">5 moves · tap to remove</span>
+          </button>
+          <button class="slidecard" role="option" aria-selected="false">
+            <span class="n">Pull</span><span class="s">tap to add</span>
+          </button>
+          <button class="slidecard" role="option" aria-selected="false">
+            <span class="n">Legs</span><span class="s">tap to add</span>
+          </button>
+        </div>
+        <button class="slideadd" aria-label="Add a session">+</button>
+      </div>
+      <div class="dots"><i class="live"></i><i></i><i></i></div>
+    </header>
+
+    <div class="pager" style="padding:16px 20px 0">
+      <button class="pagerbtn" style="width:32px;height:32px" aria-label="Previous week">‹</button>
+      <span class="pagerlbl" style="font-size:11px">This week</span>
+      <button class="pagerbtn" style="width:32px;height:32px" aria-label="Next week" disabled>›</button>
+    </div>
+
+    <div class="daypills no-scrollbar">
+<button class="daypill" aria-pressed="false">
+      MON 20<small>Pull</small></button>
+<button class="daypill" aria-pressed="false">
+      TUE 21<small>Legs</small></button>
+<button class="daypill on" aria-pressed="true">
+      WED 22<small>Push</small><span class="todaydot"></span></button>
+<button class="daypill" aria-pressed="false">
+      THU 23<small>rest</small></button>
+<button class="daypill" aria-pressed="false">
+      FRI 24<small>Pull</small></button>
+<button class="daypill" aria-pressed="false">
+      SAT 25<small>Legs</small></button>
+<button class="daypill" aria-pressed="false">
+      SUN 26<small>rest</small></button>
+    </div>
+
+    <div style="padding:0 20px"><button class="editlink">Edit list</button></div>
+
+    <div class="exlist">
+      <div class="listhead">
+        <span class="t">Exercises · tap to log</span>
+        <span class="c">2/5</span>
+      </div>
+
+<div class="exrow done" role="button" tabindex="0">
+    <button class="tick on" aria-pressed="true" aria-label="Mark Bench Press not done"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgb(var(--on-success))" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:1"><path d="M5 12.5 10 17l9-10"/></svg></button>
+    <div class="exmain">
+      <div class="exname">Bench Press</div>
+      <div class="exmeta"><span class="tag" style="background:color-mix(in srgb, #e5484d calc(var(--tag-alpha) * 100%), transparent);color:light-dark(#ce2c31, #ff9592)">Chest</span><span class="exnums">4 × 8 · <b>60kg</b></span></div>
+      <div class="exlast">Last time <b>57.5kg</b> · Fri 17 Jul</div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="chev"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+<div class="exrow done" role="button" tabindex="0">
+    <button class="tick on" aria-pressed="true" aria-label="Mark Overhead Press not done"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgb(var(--on-success))" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:1"><path d="M5 12.5 10 17l9-10"/></svg></button>
+    <div class="exmain">
+      <div class="exname">Overhead Press</div>
+      <div class="exmeta"><span class="tag" style="background:color-mix(in srgb, #00a2c7 calc(var(--tag-alpha) * 100%), transparent);color:light-dark(#107d98, #4ccce6)">Shoulders</span><span class="exnums">3 × 10 · <b>40kg</b></span></div>
+      <div class="exlast">Last time <b>40kg</b> · Fri 17 Jul</div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="chev"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+<div class="exrow" role="button" tabindex="0">
+    <button class="tick" aria-pressed="false" aria-label="Mark Incline Dumbbell Press done"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgb(var(--on-success))" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0"><path d="M5 12.5 10 17l9-10"/></svg></button>
+    <div class="exmain">
+      <div class="exname">Incline Dumbbell Press</div>
+      <div class="exmeta"><span class="tag" style="background:color-mix(in srgb, #e5484d calc(var(--tag-alpha) * 100%), transparent);color:light-dark(#ce2c31, #ff9592)">Chest</span><span class="exnums">3 × 10 · <b>22.5kg</b></span></div>
+      <div class="exlast">Last time <b>22.5kg</b> · Fri 17 Jul · best 25kg</div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="chev"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+<div class="exrow" role="button" tabindex="0">
+    <button class="tick" aria-pressed="false" aria-label="Mark Triceps Pushdown done"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgb(var(--on-success))" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0"><path d="M5 12.5 10 17l9-10"/></svg></button>
+    <div class="exmain">
+      <div class="exname">Triceps Pushdown</div>
+      <div class="exmeta"><span class="tag" style="background:color-mix(in srgb, #d6409f calc(var(--tag-alpha) * 100%), transparent);color:light-dark(#c2298a, #ff8dcc)">Triceps</span><span class="exnums">3 × 12 · <b>25kg</b></span></div>
+      <div class="exlast">Last time <b>25kg</b> · Fri 17 Jul</div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="chev"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+<div class="exrow" role="button" tabindex="0">
+    <button class="tick" aria-pressed="false" aria-label="Mark Treadmill Walking done"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgb(var(--on-success))" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" style="opacity:0"><path d="M5 12.5 10 17l9-10"/></svg></button>
+    <div class="exmain">
+      <div class="exname">Treadmill Walking</div>
+      <div class="exmeta"><span class="tag" style="background:color-mix(in srgb, #46a758 calc(var(--tag-alpha) * 100%), transparent);color:light-dark(#2a7e3b, #71d083)">Cardio</span><span class="exnums">20 min · 5.5 km/h · 10% · <b>≈185 kcal</b></span></div>
+      <div class="exlast">Last time <b>20 min · 5.5 km/h · 10%</b> · Mon 20 Jul</div>
+    </div>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true" class="chev"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+
+      <button class="addex"><span style="font-size:18px;line-height:1">+</span> Add exercise to Push</button>
+
+      <button class="prbanner">
+        <div class="ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4zM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="min-width:0">
+          <div class="t">PR to beat today</div>
+          <div class="d">Bench Press · best 60kg · Fri 17 Jul</div>
+        </div>
+      </button>
+    </div>
+
+    <div style="padding:16px 20px 0">
+      <div class="card" style="border-radius:20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <h2 class="cardtitle">Approx. burned today</h2>
+          <span class="display tabular" style="font-size:19px;font-weight:800;color:rgb(var(--accent))">520<span style="margin-left:4px;font-size:11px;font-weight:600;color:rgb(var(--mute))">kcal</span></span>
+        </div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+          <div class="burnrow"><span class="l">Push (lifting)</span><span class="v tabular">210</span></div>
+          <div class="burnrow"><span class="l">Treadmill Walking</span><span class="v tabular">185</span></div>
+          <div class="burnrow"><span class="l">Pickleball · 45 min</span><span class="v tabular">125</span></div>
+        </div>
+        <p class="footnote" style="margin:12px 0 0">Estimated from your bodyweight — expect it to be within about a fifth.</p>
+      </div>
+    </div>
+
+    <div class="stickyfoot">
+      <button class="cta"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg> Continue session</button>
+    </div>
+  </main>
+  <nav class="nav" aria-label="Main"><div class="tabs">
+    <button class="navbtn on" aria-current="page">
+      <span style="display:flex;line-height:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-1.5.6-2.7 1.5-3.7C9 10 10 8.5 12 3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></span><span class="lbl">Today</span></button>
+    <button class="navbtn">
+      <span style="display:flex;line-height:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 14h3l2-5 3 9 2-6 1.5 2H20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Rehab</span></button>
+    <button class="navbtn">
+      <span style="display:flex;line-height:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 9v4l2.5 2M9.5 2h5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Sports</span></button>
+    <button class="navbtn">
+      <span style="display:flex;line-height:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="lbl">Stats</span></button>
+  </div></nav>
+
+  <div class="scrim" aria-hidden="true"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="Log this exercise">
+    <div class="grab"></div>
+    <button type="button" class="close" aria-label="Close">✕</button>
+    <h3>Log this exercise</h3>
+    
+    <div class="sbody">
+
+      <div style="display:flex;align-items:center;gap:12px" class="panel">
+        <button class="thumb" style="width:46px;height:46px" aria-label="See how to do Bench Press">🏋️</button>
+        <div style="min-width:0;flex:1">
+          <div class="truncate" style="font-size:15px;font-weight:700">Bench Press</div>
+          <div style="margin-top:4px"><span class="tag" style="background:color-mix(in srgb, #e5484d calc(var(--tag-alpha) * 100%), transparent);color:light-dark(#ce2c31, #ff9592)">Chest</span></div>
+        </div>
+      </div>
+
+      <div class="ghostcard" style="margin-top:12px">
+        <div class="t">Last time</div>
+        <p>You logged <b>57.5kg</b> Fri 17 Jul — that's the number to beat.</p>
+      </div>
+
+      <div style="margin-top:12px"><div class="panel">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+      <span class="paneltitle">Working weight</span>
+      <span style="font-size:11px;color:rgb(var(--dim))">10 sessions</span>
+    </div>
+    <div style="margin-top:6px;display:flex;align-items:baseline;gap:10px">
+      <span class="display" style="font-size:32px;font-weight:900;line-height:1">60<span style="margin-left:4px;font-size:15px;font-weight:700;color:rgb(var(--dim))">kg</span></span>
+      <span style="font-size:13px;font-weight:700;color:rgb(var(--success))">+2.5kg<span style="margin-left:4px;font-weight:500;color:rgb(var(--dim))">since last</span></span>
+    </div>
+    <div style="margin-top:4px;font-size:12px;color:rgb(var(--dim))">Wed 22 Jul · 4 × 8</div>
+    <svg viewBox="0 0 300 96" style="margin-top:8px;width:100%;height:auto" role="img" aria-label="Working weight over 10 sessions, from 50kg to 60kg">
+      <defs><linearGradient id="pcFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgb(var(--accent))" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="rgb(var(--accent))" stop-opacity="0"/>
+      </linearGradient></defs>
+      <line x1="30" x2="290" y1="12" y2="12" stroke="rgb(var(--border))" stroke-width="1"/>
+      <line x1="30" x2="290" y1="76" y2="76" stroke="rgb(var(--border))" stroke-width="1"/>
+      <text x="24" y="15" text-anchor="end" fill="rgb(var(--dim))" style="font-size:9px">61.5</text>
+      <text x="24" y="79" text-anchor="end" fill="rgb(var(--dim))" style="font-size:9px">48.5</text>
+      <path d="M30.0 68.6 L58.9 56.3 L87.8 56.3 L124.9 44.0 L153.8 44.0 L182.7 31.7 L211.6 31.7 L240.5 31.7 L269.4 31.7 L290.0 19.4 L290.0 76 L30.0 76 Z" fill="url(#pcFill)"/>
+      <path d="M30.0 68.6 L58.9 56.3 L87.8 56.3 L124.9 44.0 L153.8 44.0 L182.7 31.7 L211.6 31.7 L240.5 31.7 L269.4 31.7 L290.0 19.4" fill="none" stroke="rgb(var(--accent))" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="30.0" cy="68.6" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="58.9" cy="56.3" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="87.8" cy="56.3" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="124.9" cy="44.0" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="153.8" cy="44.0" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="182.7" cy="31.7" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="211.6" cy="31.7" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="240.5" cy="31.7" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="269.4" cy="31.7" r="2.5" fill="rgb(var(--surface2))" stroke="rgb(var(--accent))" stroke-width="2"/><circle cx="290.0" cy="19.4" r="4.5" fill="rgb(var(--accent))" stroke="rgb(var(--accent))" stroke-width="2"/>
+      <text x="30" y="90" text-anchor="start" fill="rgb(var(--dim))" style="font-size:9px">Wed 20 May</text>
+      <text x="290" y="90" text-anchor="end" fill="rgb(var(--dim))" style="font-size:9px">Wed 22 Jul</text>
+    </svg>
+  </div></div>
+
+      <div class="panel" style="margin-top:12px">
+        <h4 class="paneltitle">Today</h4>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:12px">
+<div class="lrow"><span class="l">Sets</span><div class="steplg">
+  <button class="minus" aria-label="Decrease sets">−</button>
+  <span class="val tabular">4<span> sets</span></span>
+  <button class="plus" aria-label="Increase sets">+</button>
+</div></div>
+<div class="lrow"><span class="l">Reps</span><div class="steplg">
+  <button class="minus" aria-label="Decrease reps">−</button>
+  <span class="val tabular">8<span> reps</span></span>
+  <button class="plus" aria-label="Increase reps">+</button>
+</div></div>
+<div class="lrow"><span class="l">Weight</span><div class="steplg">
+  <button class="minus" aria-label="Decrease weight">−</button>
+  <span class="val tabular">60<span> kg</span></span>
+  <button class="plus" aria-label="Increase weight">+</button>
+</div></div>
+        </div>
+        <button class="dashbtn" style="margin-top:12px">Match last time — 57.5kg</button>
+        <button class="dashbtn" style="margin-top:8px">Add 2.5kg — 60kg</button>
+      </div>
+
+      <button class="sheetcta">Save &amp; mark done</button>
+      <button class="quietbtn">Save without marking done</button>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById("themeBtn").addEventListener("click", () => {
+  const el = document.documentElement;
+  el.dataset.theme = el.dataset.theme === "dark" ? "light" : "dark";
+});
+</script>
+</body>
+</html>

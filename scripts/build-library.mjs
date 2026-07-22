@@ -42,6 +42,9 @@ const MUSCLE_TO_GROUP = {
   shoulders: "shoulders",
   biceps: "biceps",
   triceps: "triceps",
+  // Previously unmapped, which silently dropped every forearm exercise from
+  // the library — wrist curls, farmer's walks and grip work all vanished.
+  forearms: "forearms",
   abdominals: "core",
 };
 

@@ -17,7 +17,7 @@
  */
 
 import { useMemo } from "react";
-import { ACTIVITY_BY_ID, liftingKcal } from "./activities";
+import { ACTIVITY_BY_ID, liftingKcal, stepsKcal } from "./activities";
 import { useDayActivities, type ActivityEntry } from "./activity-store";
 import { useDayCompletions } from "./store";
 import { useBody } from "./body";
@@ -44,10 +44,12 @@ export function computeBurn(opts: {
   activities: ActivityEntry[];
   byId: Map<string, LibraryExercise>;
   weightKg: number | null;
+  /** Everyday steps logged for the date. */
+  steps?: number;
   /** Session names, for the lifting row's label. */
   gymLabel?: string;
 }): DayBurn {
-  const { entries, activities, byId, weightKg, gymLabel } = opts;
+  const { entries, activities, byId, weightKg, steps, gymLabel } = opts;
   const rows: BurnRow[] = [];
 
   const done = Object.entries(entries).filter(([, e]) => e.done);
@@ -87,19 +89,31 @@ export function computeBurn(opts: {
     });
   }
 
+  // Everyday steps, same walking model as the distance activities. Recomputed
+  // on read rather than snapshotted: unlike a logged bout, the step count is
+  // still being edited through the day, so there is no "save moment" to freeze.
+  const stepBurn = stepsKcal(steps ?? 0, weightKg);
+  if (stepBurn > 0) {
+    rows.push({
+      key: "steps",
+      label: `${(steps ?? 0).toLocaleString()} steps`,
+      kcal: stepBurn,
+    });
+  }
+
   return { rows, total: rows.reduce((s, r) => s + r.kcal, 0), setsDone, liftMinutes };
 }
 
 /** The same figure, for screens that aren't already reading the day. */
 export function useDayBurn(key: string): DayBurn {
   const { entries } = useDayCompletions(key);
-  const { entries: activities } = useDayActivities(key);
+  const { entries: activities, steps } = useDayActivities(key);
   const { body } = useBody();
   const { library } = useLibrary();
   const byId = useMemo(() => indexById(library), [library]);
 
   return useMemo(
-    () => computeBurn({ entries, activities, byId, weightKg: body.weightKg }),
-    [entries, activities, byId, body.weightKg]
+    () => computeBurn({ entries, activities, byId, weightKg: body.weightKg, steps }),
+    [entries, activities, byId, body.weightKg, steps]
   );
 }

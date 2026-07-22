@@ -49,6 +49,7 @@ export default function LogSheet({
   history,
   isDone,
   onSave,
+  onRemove,
 }: {
   open: boolean;
   onClose: () => void;
@@ -59,6 +60,8 @@ export default function LogSheet({
   history: ExerciseHistory | undefined;
   isDone: boolean;
   onSave: (next: LoggedInput) => void;
+  /** Remove this exercise from the session, so deleting doesn't require Edit list. */
+  onRemove?: () => void;
 }) {
   const { body } = useBody();
   const [sets, setSets] = useState(item?.sets ?? 3);
@@ -353,6 +356,20 @@ export default function LogSheet({
         >
           Save without marking done
         </button>
+
+        {/* Removes from the session template only — logged history for past
+            days keeps its record, so this is safe to offer without a confirm. */}
+        {onRemove && (
+          <button
+            onClick={() => {
+              onRemove();
+              onClose();
+            }}
+            className="press mt-2 w-full rounded-field py-2.5 text-[13px] font-semibold text-muted transition hover:text-text"
+          >
+            ✕ Remove {exercise?.name ?? "this exercise"} from the session
+          </button>
+        )}
       </div>
 
       <ExerciseDetail

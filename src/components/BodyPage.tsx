@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { GROUPS, dateKey } from "@/lib/groups";
 import { roundKcal } from "@/lib/activities";
+import { useDayActivities } from "@/lib/activity-store";
 import { useDayBurn } from "@/lib/burn";
+import { usePedometer } from "@/lib/pedometer";
 import {
   ACTIVITY,
   GOALS,
@@ -144,7 +146,10 @@ function Segmented<T extends string>({
 export default function BodyPage() {
   const { body, update } = useBody();
   const m = useMemo(() => computeMetrics(body), [body]);
-  const burn = useDayBurn(dateKey(new Date()));
+  const todayKey = dateKey(new Date());
+  const burn = useDayBurn(todayKey);
+  const { steps, setSteps } = useDayActivities(todayKey);
+  const ped = usePedometer();
   const vsMaintenance = m ? burnForDay(m.bmr, burn.total) - m.tdee : 0;
 
   return (
@@ -384,6 +389,65 @@ export default function BodyPage() {
                     Nothing trained yet today — this is a rest-day figure.
                   </p>
                 )}
+              </div>
+
+              {/* Steps tracker — logged here because walking is the burn the
+                  session list never sees. Feeds the total above. */}
+              <div className="mt-4 border-t border-line pt-3.5">
+                <MeasureRow
+                  label="Steps today"
+                  unit="steps"
+                  placeholder="0"
+                  step={500}
+                  value={steps > 0 ? steps : null}
+                  onChange={(v) => setSteps(v ?? 0)}
+                />
+                <p className="mt-2 text-[11px] leading-[1.5] text-mute">
+                  From your phone or watch, once a day is enough. Costed like walking —
+                  about {body.weightKg ? roundKcal(0.53 * body.weightKg * 7.6) : 300} kcal
+                  per 10,000 at your weight.
+                </p>
+
+                {/* Live pedometer, phones only. The web can't count in the
+                    background like a tracker, so this is per-walk: start it,
+                    pocket the phone, stop when you're back. */}
+                {ped.state === "counting" ? (
+                  <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5 text-center">
+                    <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+                      Counting steps…
+                    </div>
+                    <div className="mt-1 font-display text-[38px] font-bold leading-none tabular-nums">
+                      {ped.steps.toLocaleString()}
+                    </div>
+                    <p className="mt-1.5 text-[11px] text-mute">
+                      Keep the app open — the screen stays awake while this runs.
+                    </p>
+                    <button
+                      onClick={() => {
+                        const n = ped.stop();
+                        if (n > 0) setSteps(steps + n);
+                      }}
+                      className="press mt-3 w-full rounded-field bg-accent py-2.5 text-[13px] font-bold text-on-accent"
+                    >
+                      Stop &amp; add to today
+                    </button>
+                  </div>
+                ) : ped.state !== "unsupported" ? (
+                  <>
+                    <button
+                      onClick={ped.start}
+                      className="press mt-3 w-full rounded-field border border-dashed border-line py-2.5 text-[13px] font-semibold text-muted transition hover:border-accent hover:text-text"
+                    >
+                      🚶 Count a walk with this phone
+                    </button>
+                    {ped.state === "denied" && (
+                      <p className="mt-2 text-[11px] leading-[1.5] text-mute">
+                        Motion access was declined. Allow motion &amp; orientation for this
+                        site in your browser settings, then try again.
+                      </p>
+                    )}
+                  </>
+                ) : null}
               </div>
 
               <p className="mt-3 text-[11.5px] leading-[1.5] text-muted">

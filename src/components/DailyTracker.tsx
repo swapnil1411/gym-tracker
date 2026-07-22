@@ -87,7 +87,7 @@ export default function DailyTracker() {
 
   const key = dateKey(selectedDate);
   const { entries, toggle, setCompletion } = useDayCompletions(key);
-  const { entries: activities } = useDayActivities(key);
+  const { entries: activities, steps } = useDayActivities(key);
   const { body } = useBody();
 
   const { workoutIds, isOverride } = resolve(key);
@@ -136,8 +136,8 @@ export default function DailyTracker() {
    */
   const gymLabel = sessions.map((w) => w.name).join(" + ");
   const burn = useMemo(
-    () => computeBurn({ entries, activities, byId, weightKg: body.weightKg, gymLabel }),
-    [entries, activities, byId, body.weightKg, gymLabel]
+    () => computeBurn({ entries, activities, byId, weightKg: body.weightKg, steps, gymLabel }),
+    [entries, activities, byId, body.weightKg, steps, gymLabel]
   );
 
   // Renaming inline only makes sense when there's exactly one session to rename.
@@ -690,7 +690,7 @@ export default function DailyTracker() {
             onClick={() => setLogTarget({ w: prTarget.workoutId, ex: prTarget.item.exerciseId })}
             className="press flex items-center gap-3 rounded-2xl border border-pr/25 bg-pr2 px-4 py-3.5 text-left"
           >
-            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-[11px] bg-pr text-[#1c1206]">
+            <div className="flex h-9 w-9 flex-none items-center justify-center rounded-[11px] bg-pr text-[#221a35]">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4zM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"
@@ -800,6 +800,11 @@ export default function DailyTracker() {
         entry={logTarget ? entries[logTarget.ex] : undefined}
         history={logTarget ? history.get(logTarget.ex) : undefined}
         isDone={logTarget ? Boolean(entries[logTarget.ex]?.done) : false}
+        onRemove={() => {
+          if (!logTarget) return;
+          removeExercise(logTarget.w, logTarget.ex);
+          setLogTarget(null);
+        }}
         onSave={({ markDone, ...v }) => {
           if (!logTarget) return;
           /*

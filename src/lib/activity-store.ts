@@ -38,6 +38,8 @@ export interface ActivityEntry {
 
 interface ActivityDay {
   entries: ActivityEntry[];
+  /** Everyday steps for the date, logged as one end-of-day figure. */
+  steps?: number;
 }
 
 /** activities/{YYYY-MM-DD}. Doc ids match completions so the two align by date. */
@@ -49,16 +51,20 @@ function dayRef(uid: string, key: string) {
 export function useDayActivities(key: string) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<ActivityEntry[]>([]);
+  const [steps, setStepsState] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
       setEntries([]);
+      setStepsState(0);
       setLoading(false);
       return;
     }
     return onSnapshot(dayRef(user.uid, key), (snap) => {
-      setEntries((snap.data() as ActivityDay | undefined)?.entries ?? []);
+      const data = snap.data() as ActivityDay | undefined;
+      setEntries(data?.entries ?? []);
+      setStepsState(data?.steps ?? 0);
       setLoading(false);
     });
   }, [user, key]);
@@ -97,7 +103,18 @@ export function useDayActivities(key: string) {
     [entries, write]
   );
 
-  return { entries, loading, add, update, remove };
+  /** Steps live on the same day doc so they can never drift to another date. */
+  const setSteps = useCallback(
+    async (next: number) => {
+      if (!user) return;
+      const clamped = Math.max(0, Math.round(next));
+      setStepsState(clamped); // optimistic, like everything else here
+      await setDoc(dayRef(user.uid, key), { steps: clamped }, { merge: true });
+    },
+    [user, key]
+  );
+
+  return { entries, steps, setSteps, loading, add, update, remove };
 }
 
 /** Activities across a date range, for the calendar and the weekly total. */

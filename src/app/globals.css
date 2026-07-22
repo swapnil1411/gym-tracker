@@ -26,27 +26,27 @@
  */
 :root,
 [data-theme="dark"] {
-  --bg: 21 24 30; /* #15181e */
-  --surface: 28 32 41; /* #1c2029 */
-  --surface2: 36 41 53; /* #242935 */
-  --surface3: 44 49 61; /* #2c313d */
-  --border: 47 53 66; /* #2f3542 */
-  --text: 243 245 248; /* #f3f5f8 */
-  --dim: 162 171 187; /* #a2abbb */
-  --mute: 107 115 133; /* #6b7385 */
+  --bg: 17 18 20; /* #111214 */
+  --surface: 24 26 29; /* #181a1d */
+  --surface2: 32 34 38; /* #202226 */
+  --surface3: 44 47 52; /* #2c2f34 */
+  --border: 39 41 46; /* #27292e */
+  --text: 232 238 235; /* #e8eeeb */
+  --dim: 150 162 156; /* #96a29c */
+  --mute: 104 116 110; /* #68746e */
 
-  --accent: 78 120 220; /* one notch softer than #5b8cff */
-  --accent2: 39 52 82;
-  --accent-ghost: 25 33 49;
-  --on-accent: 255 255 255;
+  --accent: 130 198 174; /* sage #82c6ae */
+  --accent2: 40 62 54;
+  --accent-ghost: 26 40 35;
+  --on-accent: 14 28 23;
 
-  --success: 48 187 126;
-  --success2: 20 51 40;
-  --on-success: 255 255 255;
+  --success: 130 198 174;
+  --success2: 28 46 40;
+  --on-success: 14 28 23;
 
-  /* Personal-record gold, reserved for PR callouts — never a general accent. */
-  --pr: 210 160 68;
-  --pr2: 36 31 17;
+  /* Personal-record lavender, reserved for PR callouts — never a general accent. */
+  --pr: 201 186 236;
+  --pr2: 41 37 53;
 
   /* Back-compat aliases for components that still use the original role names. */
   --raised: var(--surface2);
@@ -56,10 +56,10 @@
   --done-text: var(--success);
   --on-done: var(--on-success);
   --accent-text: var(--accent);
-  --header-top: 24 28 36;
+  --header-top: 24 26 29;
   --card-done: var(--success2);
   --heat-empty: var(--surface2);
-  --tag-alpha: 0.14;
+  --tag-alpha: 0.18;
   --lift: 0 10px 24px -18px rgba(0, 0, 0, 0.7);
   --lift-strong: 0 14px 30px -12px rgb(var(--accent) / 0.42);
 
@@ -67,26 +67,26 @@
 }
 
 [data-theme="light"] {
-  --bg: 244 246 250; /* #f4f6fa */
+  --bg: 237 241 241; /* #edf1f1 */
   --surface: 255 255 255;
-  --surface2: 238 241 246; /* #eef1f6 */
-  --surface3: 226 231 240; /* #e2e7f0 */
-  --border: 226 231 240; /* #e2e7f0 */
-  --text: 26 32 48; /* #1a2030 */
-  --dim: 90 100 120; /* #5a6478 */
-  --mute: 138 147 166; /* #8a93a6 */
+  --surface2: 238 242 242; /* #eef2f2 */
+  --surface3: 226 232 231; /* #e2e8e7 */
+  --border: 224 231 230; /* #e0e7e6 */
+  --text: 24 30 31; /* #181e1f */
+  --dim: 96 108 108; /* #606c6c */
+  --mute: 150 160 160; /* #96a0a0 */
 
-  --accent: 61 99 221; /* #3d63dd */
-  --accent2: 196 209 247; /* #c4d1f7 */
-  --accent-ghost: 238 242 253; /* #eef2fd */
+  --accent: 26 158 130; /* #1a9e82 */
+  --accent2: 190 228 217; /* #bee4d9 */
+  --accent-ghost: 228 244 238; /* #e4f4ee */
   --on-accent: 255 255 255;
 
-  --success: 26 157 106; /* #1a9d6a */
-  --success2: 223 243 233; /* #dff3e9 */
+  --success: 26 158 130; /* #1a9e82 */
+  --success2: 222 240 233; /* #def0e9 */
   --on-success: 255 255 255;
 
-  --pr: 200 138 26; /* #c88a1a */
-  --pr2: 248 239 219; /* #f8efdb */
+  --pr: 122 104 214; /* #7a68d6 */
+  --pr2: 236 232 250; /* #ece8fa */
 
   --raised: var(--surface2);
   --line: var(--border);
@@ -98,7 +98,7 @@
   --header-top: 255 255 255;
   --card-done: var(--success2);
   --heat-empty: var(--surface2);
-  --tag-alpha: 0.16;
+  --tag-alpha: 0.2;
   --lift: 0 12px 28px -20px rgba(26, 32, 48, 0.35);
   --lift-strong: 0 14px 30px -14px rgb(var(--accent) / 0.45);
 
@@ -122,7 +122,7 @@ body::before {
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgb(var(--surface3)) 0%, rgb(var(--bg)) 60%, rgb(16 18 22) 100%);
+    radial-gradient(120% 90% at 50% 0%, rgb(var(--surface3)) 0%, rgb(var(--bg)) 60%, rgb(12 13 15) 100%);
   pointer-events: none;
 }
 
