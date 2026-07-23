@@ -141,7 +141,7 @@ export default function LogSheet({
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-bold">{exercise?.name ?? "Exercise"}</div>
             <span
-              className="mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+              className="mt-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.06em]"
               style={tagStyle(g)}
             >
               {g.name}
@@ -154,7 +154,7 @@ export default function LogSheet({
         {cardio ? (
           lastCardio && (
             <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+              <div className="text-[10.5px] font-label font-extrabold uppercase tracking-[.08em] text-accent-text">
                 Last time
               </div>
               <p className="mt-1.5 text-[13px] text-dim">
@@ -167,7 +167,7 @@ export default function LogSheet({
         ) : (
           suggestion > 0 && (
             <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+              <div className="text-[10.5px] font-label font-extrabold uppercase tracking-[.08em] text-accent-text">
                 Last time
               </div>
               <p className="mt-1.5 text-[13px] text-dim">
@@ -191,7 +191,7 @@ export default function LogSheet({
             </div>
           ) : (
             <div className="mt-3 rounded-card bg-raised p-4">
-              <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
+              <div className="text-[11px] font-label font-bold uppercase tracking-[.1em] text-muted">
                 Working weight
               </div>
               <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
@@ -203,7 +203,7 @@ export default function LogSheet({
 
         {/* today */}
         <div className="mt-3 rounded-card bg-raised p-4">
-          <div className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">Today</div>
+          <div className="text-[11px] font-label font-bold uppercase tracking-[.1em] text-muted">Today</div>
 
           {cardio ? (
             <>
@@ -318,7 +318,7 @@ export default function LogSheet({
         {cardio &&
           (body.weightKg ? (
             <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5 text-center">
-              <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+              <div className="text-[10.5px] font-label font-extrabold uppercase tracking-[.08em] text-accent-text">
                 Approx. burn
               </div>
               <div className="mt-1 font-display text-[38px] font-bold leading-none tabular-nums">

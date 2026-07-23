@@ -169,13 +169,17 @@ export default function DailyTracker() {
   const title = sessions.length ? sessions.map((w) => w.name).join(" + ") : "Rest";
 
   return (
-    <div className="flex w-full max-w-app flex-col">
+    <div className="mx-auto flex w-full max-w-app flex-col md:max-w-2xl">
       {/* ---------------------------------- header --------------------------------- */}
       {/* The brand, theme toggle and log-out moved to the persistent TopBar in
           the Ergonomic design, so this header is just the day itself. */}
       <header className="px-5 pb-4 pt-3">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
+            {/* Stitch refined header: a label-caps kicker above the session name. */}
+            <div className="mb-1 text-[11px] font-label font-extrabold uppercase tracking-[.12em] text-dim">
+              Session
+            </div>
             {nameEditing && soleSession ? (
               <input
                 autoFocus
@@ -271,7 +275,7 @@ export default function DailyTracker() {
         >
           ‹
         </button>
-        <div className="text-[11px] font-bold uppercase tracking-[.08em] text-mute">
+        <div className="text-[11px] font-label font-bold uppercase tracking-[.08em] text-mute">
           {weekOffset === 0
             ? "This week"
             : `Week of ${dateAt(0).toLocaleDateString(undefined, { day: "numeric", month: "short" })}`}
@@ -303,23 +307,43 @@ export default function DailyTracker() {
                 setEditing(false);
               }}
               aria-pressed={active}
-              className={`relative min-w-[104px] flex-none rounded-[14px] border px-3.5 py-3 text-left font-display text-[13px] font-bold tracking-[.04em] transition ${
-                active ? "border-accent bg-accent-ghost text-accent" : "border-line bg-surface text-text"
+              // Session names live on the tiles below; the strip is just the
+              // week. Non-rest days keep a dot so a planned day still reads as
+              // one at a glance.
+              title={label}
+              className={`flex min-w-[64px] flex-1 flex-none flex-col items-center rounded-tile border py-2 transition ${
+                active
+                  ? "border-accent/30 bg-accent-ghost text-accent"
+                  : "border-line bg-surface2 text-text"
               }`}
             >
-              {/* The date, not just the weekday: once you can page back, "MON"
-                  alone no longer says which Monday you're looking at. */}
-              {d.label} {dd.getDate()}
-              <small
-                className={`mt-1 block max-w-[78px] truncate font-body text-[11px] font-medium capitalize tracking-normal ${
-                  active ? "text-accent" : "text-mute"
+              <span
+                className={`text-[11px] font-label font-extrabold uppercase tracking-[.12em] ${
+                  active ? "text-accent" : "text-dim"
                 }`}
               >
-                {label}
-              </small>
-              {isToday && (
-                <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-bg bg-success" />
-              )}
+                {d.label}
+              </span>
+              {/* The date, not just the weekday: once you can page back, "MON"
+                  alone no longer says which Monday you're looking at. */}
+              <span
+                className={`font-display text-[19px] font-extrabold ${
+                  active ? "" : names.length ? "" : "opacity-60"
+                }`}
+              >
+                {dd.getDate()}
+              </span>
+              <span
+                className={`mt-1 h-1.5 w-1.5 rounded-full ${
+                  active
+                    ? "bg-accent"
+                    : isToday
+                      ? "bg-success"
+                      : names.length
+                        ? "bg-mute/50"
+                        : "bg-transparent"
+                }`}
+              />
             </button>
           );
         })}
@@ -365,8 +389,8 @@ export default function DailyTracker() {
 
         {sessions.length > 0 && (
           <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] font-extrabold uppercase tracking-[.12em] text-mute">
-              Exercises · tap to log
+            <span className="text-[11px] font-label font-extrabold uppercase tracking-[.12em] text-mute">
+              {isToday ? "Today's protocol" : "Protocol"}
             </span>
             <span className="text-[12.5px] font-bold text-accent-text">
               {doneCount}/{allItems.length}
@@ -379,7 +403,7 @@ export default function DailyTracker() {
             {/* Only label the groups when there's more than one session in play. */}
             {sessions.length > 1 && (
               <div className="mt-1 flex items-baseline justify-between px-1">
-                <span className="font-display text-[12px] font-bold uppercase tracking-[.1em]">
+                <span className="font-display text-[12px] font-label font-bold uppercase tracking-[.1em]">
                   {w.name}
                 </span>
                 <span className="text-[11px] text-muted">
@@ -417,6 +441,237 @@ export default function DailyTracker() {
               const rowKcal = isDone
                 ? entry?.kcal ?? 0
                 : cardioKcal(shownCardio, ex, body.weightKg);
+
+              const openLog = () => setLogTarget({ w: w.id, ex: item.exerciseId });
+              const doToggle = () => {
+                if (isFuture) return;
+                // Ticking a cardio row has to snapshot its minutes and its
+                // calories too, or the day's burn would silently miss it.
+                toggle(
+                  item.exerciseId,
+                  cardio
+                    ? { sets: 1, reps: 0, weightKg: 0, ...shownCardio, kcal: rowKcal }
+                    : item
+                );
+              };
+              /* The one you'd do next gets the design's elevated treatment. */
+              const isNext =
+                nextOpen?.workoutId === w.id && nextOpen.item.exerciseId === item.exerciseId;
+              const delay = { animationDelay: `${Math.min(i, 6) * 38}ms` };
+              const rowKey = (e: React.KeyboardEvent) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  openLog();
+                }
+              };
+
+              /* ------------------------- done card ------------------------- */
+              if (!editing && isDone) {
+                return (
+                  <div
+                    key={item.exerciseId}
+                    style={delay}
+                    onClick={openLog}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={rowKey}
+                    className="rise-in press press-card flex cursor-pointer items-center gap-4 rounded-card border border-line bg-surface/50 p-4 opacity-70"
+                  >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        doToggle();
+                      }}
+                      aria-pressed
+                      aria-label={`Mark ${ex?.name ?? "exercise"} not done`}
+                      className="press flex h-12 w-12 flex-none items-center justify-center rounded-full bg-success/10 text-success"
+                    >
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.2 14.5-4-4 1.7-1.7 2.3 2.3 4.9-4.9 1.7 1.7-6.6 6.6z" />
+                      </svg>
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[16px] font-extrabold line-through decoration-success/70">
+                        {ex?.name ?? "Unknown exercise"}
+                      </div>
+                      <div className="mt-0.5 truncate text-[13px] font-medium italic text-mute">
+                        {cardio
+                          ? `${cardioSummary(shownCardio, ex)}${rowKcal > 0 ? ` · ≈${roundKcal(rowKcal)} kcal` : ""}`
+                          : `${shownSets} × ${shownReps}${shownKg > 0 ? ` · ${formatKg(shownKg)}kg` : ""}`}
+                      </div>
+                    </div>
+                    <div className="flex-none text-right">
+                      <div className="font-display text-[19px] font-extrabold">
+                        {cardio ? `${shownCardio.minutes}′` : `${shownSets}/${shownSets}`}
+                      </div>
+                      <div className="text-[10px] font-label font-bold uppercase tracking-[.06em] text-dim">
+                        {cardio ? "done" : "sets"}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              /* ---------------------- active (next) card --------------------- */
+              if (!editing && isNext) {
+                const best = !cardio && h && h.bestKg > 0 ? h.bestKg : 0;
+                return (
+                  <div
+                    key={item.exerciseId}
+                    style={delay}
+                    className="rise-in rounded-card border border-accent/25 bg-surface p-4 shadow-lift ring-1 ring-accent/10"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <span className="inline-block rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.08em] text-accent">
+                          {g.name}
+                        </span>
+                        <h4 className="mt-1.5 truncate font-display text-[19px] font-extrabold">
+                          {ex?.name ?? "Unknown exercise"}
+                        </h4>
+                      </div>
+                      <div className="flex-none text-right">
+                        <div className="font-display text-[24px] font-bold leading-none text-accent">
+                          {doneCount}
+                          <span className="text-[17px] text-dim">/{allItems.length}</span>
+                        </div>
+                        <div className="mt-1 text-[10px] font-label font-extrabold uppercase tracking-[.1em] text-dim">
+                          Progress
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <div className="rounded-tile border border-line/50 bg-surface2 p-3">
+                        <div className="text-[10px] font-label font-extrabold uppercase tracking-[.1em] text-dim">
+                          Target
+                        </div>
+                        <div className="mt-1 truncate text-[15px] font-extrabold">
+                          {cardio
+                            ? cardioSummary(shownCardio, ex)
+                            : `${shownKg > 0 ? `${formatKg(shownKg)}kg × ` : ""}${shownReps}`}
+                        </div>
+                      </div>
+                      {best > 0 ? (
+                        <div className="rounded-tile border border-pr/20 bg-pr2 p-3">
+                          <div className="text-[10px] font-label font-extrabold uppercase tracking-[.1em] text-pr">
+                            PR to beat
+                          </div>
+                          <div className="mt-1 truncate text-[15px] font-extrabold text-pr">
+                            {formatKg(best)}kg
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded-tile border border-accent2 bg-accent-ghost p-3">
+                          <div className="text-[10px] font-label font-extrabold uppercase tracking-[.1em] text-accent">
+                            Last time
+                          </div>
+                          <div className="mt-1 truncate text-[15px] font-extrabold text-accent">
+                            {cardio && h && h.lastMinutes > 0
+                              ? `${h.lastMinutes} min`
+                              : !cardio && h && h.lastKg > 0
+                                ? `${formatKg(h.lastKg)}kg`
+                                : "First time"}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex gap-2 border-t border-line/50 pt-3">
+                      <button
+                        onClick={openLog}
+                        className="press h-11 flex-1 rounded-tile bg-surface3 text-[13px] font-semibold"
+                      >
+                        Edit stats
+                      </button>
+                      <button
+                        onClick={doToggle}
+                        disabled={isFuture}
+                        className="press h-11 flex-1 rounded-tile bg-accent text-[13px] font-bold text-on-accent disabled:opacity-40"
+                      >
+                        Mark done
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              /* ------------------------ upcoming card ------------------------ */
+              if (!editing) {
+                return (
+                  <div
+                    key={item.exerciseId}
+                    style={delay}
+                    onClick={openLog}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={rowKey}
+                    className="rise-in press press-card flex cursor-pointer items-center justify-between gap-4 rounded-card border border-line bg-surface p-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-4">
+                      {/* The leading tile is still the quick tick — the design
+                          draws an icon here, but marking done mid-session must
+                          not require opening the sheet. */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          doToggle();
+                        }}
+                        disabled={isFuture}
+                        aria-pressed={false}
+                        aria-label={`Mark ${ex?.name ?? "exercise"} done`}
+                        className="press flex h-12 w-12 flex-none items-center justify-center rounded-tile border border-line bg-surface3 text-dim disabled:opacity-30"
+                      >
+                        <svg
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.9}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          {cardio ? (
+                            <path d="M13 4a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0zM4 20l4.5-2 1.5-5.5L8 9l4-2.5 3 3 3.5.5M10 12l-2 8" />
+                          ) : (
+                            <path d="M6.5 7v10M17.5 7v10M6.5 12h11M4 9.5v5M20 9.5v5" />
+                          )}
+                        </svg>
+                      </button>
+                      <div className="min-w-0">
+                        <div className="truncate text-[16px] font-extrabold">
+                          {ex?.name ?? "Unknown exercise"}
+                        </div>
+                        <div className="mt-0.5 truncate text-[13px] font-medium text-dim">
+                          {cardio
+                            ? cardioSummary(shownCardio, ex)
+                            : `${item.sets} sets · ${item.reps} reps${
+                                item.weightKg > 0 ? ` · ${formatKg(item.weightKg)}kg` : ""
+                              }`}
+                        </div>
+                      </div>
+                    </div>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      aria-hidden="true"
+                      className="flex-none text-mute"
+                    >
+                      <path
+                        d="M9 6l6 6-6 6"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                );
+              }
 
               return (
                 <div
@@ -498,7 +753,7 @@ export default function DailyTracker() {
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-2">
                       <span
-                        className="rounded-md bg-surface2 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+                        className="rounded-md bg-surface2 px-2 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.06em]"
                         style={tagStyle(g)}
                       >
                         {g.name}
@@ -715,28 +970,46 @@ export default function DailyTracker() {
       {/* Energy cost of the day, lifting plus anything logged on Sports. */}
       {burn.total > 0 && (
         <div className="px-5 pt-4">
+          {/* The design's "Daily Output" card: flame + total in the success
+              green, one tinted bar per energy source. */}
           <div className="rounded-card border border-line bg-surface p-4">
-            <div className="flex items-baseline justify-between">
-              <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-mute">
-                Approx. burned {isToday ? "today" : "this day"}
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-[17px] font-extrabold tracking-[-.01em]">
+                Daily output
               </h2>
-              <span className="font-display text-[19px] font-extrabold tabular-nums text-accent">
-                {roundKcal(burn.total)}
-                <span className="ml-1 text-[11px] font-semibold text-mute">kcal</span>
+              <span className="flex items-baseline gap-1 text-success">
+                <span className="font-display text-[19px] font-extrabold tabular-nums">
+                  {roundKcal(burn.total)}
+                </span>
+                <span className="text-[11px] font-semibold">kcal</span>
               </span>
             </div>
-            <div className="mt-2.5 flex flex-col gap-1.5">
-              {burn.rows.map((r) => (
-                <div key={r.key} className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-[12.5px] font-medium text-dim">{r.label}</span>
-                  <span className="flex-none font-display text-[12.5px] font-bold tabular-nums text-muted">
-                    {roundKcal(r.kcal)}
-                  </span>
+            <div className="mt-3 flex flex-col gap-2.5">
+              {burn.rows.map((r, i) => (
+                <div key={r.key} className="flex items-center gap-3">
+                  <div
+                    className={`h-8 w-2 flex-none rounded-full ${i === 0 ? "bg-accent" : "bg-success"}`}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex items-baseline justify-between gap-3 text-[12.5px]">
+                      <span className="truncate font-bold">{r.label}</span>
+                      <span className="flex-none font-medium tabular-nums text-dim">
+                        {roundKcal(r.kcal)} kcal
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface3">
+                      <div
+                        className={`h-full ${i === 0 ? "bg-accent" : "bg-success"}`}
+                        style={{ width: `${Math.round((r.kcal / burn.total) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
             <p className="mt-3 text-[11px] leading-[1.5] text-mute">
-              Estimated from your bodyweight — expect it to be within about a fifth.
+              Approx. burned {isToday ? "today" : "this day"}, estimated from your bodyweight —
+              expect it to be within about a fifth.
             </p>
           </div>
         </div>
@@ -749,24 +1022,27 @@ export default function DailyTracker() {
        * gradient stops the list from appearing to run underneath a hard edge.
        */}
       {sessions.length > 0 && !isFuture && !editing && (
-        <div className="sticky bottom-0 z-[8] mt-auto bg-gradient-to-t from-bg from-55% to-transparent px-5 pb-3 pt-7">
+        <div className="pointer-events-none sticky bottom-0 z-[8] mt-auto flex justify-center px-5 pb-4 pt-7">
+          {/* The design's floating pill: auto-width, fully rounded, with the
+              primary-tinted glow. Content scrolls beneath it, so no gradient
+              backstop — the pill floats rather than sitting on a bar. */}
           <button
             onClick={() => {
               if (nextOpen) setLogTarget({ w: nextOpen.workoutId, ex: nextOpen.item.exerciseId });
             }}
             disabled={!nextOpen}
-            className="press flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-accent text-[16px] font-extrabold text-on-accent shadow-lift-strong disabled:opacity-55 disabled:shadow-none"
+            className="press pointer-events-auto flex h-14 items-center justify-center gap-2.5 rounded-full bg-accent px-8 text-[16px] font-extrabold text-on-accent shadow-lift-strong disabled:opacity-55 disabled:shadow-none"
           >
-            {nextOpen && (
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
             {!nextOpen
               ? "Session complete"
               : doneCount === 0
                 ? "Start session"
                 : "Continue session"}
+            {nextOpen && (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
           </button>
         </div>
       )}

@@ -41,7 +41,7 @@ export default function ExerciseDetail({
       <div className="flex-1 overflow-y-auto px-4 pb-8">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+            className="rounded-md px-1.5 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.06em]"
             style={tagStyle(g)}
           >
             {g.name}
@@ -65,7 +65,7 @@ export default function ExerciseDetail({
                 className="w-full"
               />
               {frames.length > 1 && (
-                <span className="absolute left-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-bold uppercase tracking-[.06em] text-white">
+                <span className="absolute left-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-label font-bold uppercase tracking-[.06em] text-white">
                   {frameLabel}
                 </span>
               )}

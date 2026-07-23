@@ -20,7 +20,7 @@ import {
 
 const Card = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="rounded-[18px] border border-line bg-surface p-4">
-    <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-mute">{title}</h2>
+    <h2 className="text-[11px] font-label font-bold uppercase tracking-[.1em] text-mute">{title}</h2>
     <div className="mt-3">{children}</div>
   </section>
 );
@@ -153,9 +153,9 @@ export default function BodyPage() {
   const vsMaintenance = m ? burnForDay(m.bmr, burn.total) - m.tdee : 0;
 
   return (
-    <div className="flex w-full max-w-app flex-col">
+    <div className="mx-auto flex w-full max-w-app flex-col md:max-w-2xl">
       <header className="px-5 pb-2 pt-4">
-        <div className="text-[11px] font-extrabold uppercase tracking-[.12em] text-accent">You</div>
+        <div className="text-[11px] font-label font-extrabold uppercase tracking-[.12em] text-accent">You</div>
         <h1 className="mt-1 font-display text-[28px] font-extrabold tracking-[-.02em]">
           Your body
         </h1>
@@ -215,15 +215,27 @@ export default function BodyPage() {
             {/* --------------------------------- BMI --------------------------------- */}
             <Card title="Body mass index">
               <div className="flex items-end justify-between">
-                <div className="font-display text-[40px] font-bold leading-none tabular-nums">
-                  {m.bmi.toFixed(1)}
+                <div className="flex items-center gap-2.5">
+                  <span className="font-display text-[40px] font-bold leading-none tabular-nums">
+                    {m.bmi.toFixed(1)}
+                  </span>
+                  {/* Green is reserved for good news; only "Healthy" earns it. */}
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-label font-extrabold uppercase tracking-[.06em] ${
+                      m.category === "Healthy"
+                        ? "bg-success/15 text-success"
+                        : "bg-surface3 text-dim"
+                    }`}
+                  >
+                    {m.category}
+                  </span>
                 </div>
-                <div className="pb-1 text-right">
-                  <div className="text-[14px] font-bold">{m.category}</div>
-                  <div className="text-[11px] text-muted">
-                    Healthy for you: {Math.round(m.healthyRange[0])}–
-                    {Math.round(m.healthyRange[1])} kg
-                  </div>
+                <div className="pb-1 text-right text-[11px] text-muted">
+                  Healthy for you
+                  <br />
+                  <span className="font-semibold text-dim">
+                    {Math.round(m.healthyRange[0])}–{Math.round(m.healthyRange[1])} kg
+                  </span>
                 </div>
               </div>
 
@@ -273,21 +285,25 @@ export default function BodyPage() {
                       key={k}
                       onClick={() => update({ activity: k })}
                       aria-pressed={on}
+                      // Selected is the design's tinted row — accent-ghost fill
+                      // with an accent border — not a solid accent slab.
                       className={`press flex items-center justify-between rounded-field border px-3.5 py-2.5 text-left transition ${
                         on
-                          ? "border-accent bg-accent text-on-accent"
+                          ? "border-accent bg-accent-ghost"
                           : "border-line bg-raised"
                       }`}
                     >
                       <span>
-                        <span className="block text-[13.5px] font-bold">{a.label}</span>
-                        <span
-                          className={`block text-[11px] ${on ? "opacity-75" : "text-muted"}`}
-                        >
-                          {a.hint}
+                        <span className={`block text-[13.5px] font-bold ${on ? "text-accent" : ""}`}>
+                          {a.label}
                         </span>
+                        <span className="block text-[11px] text-muted">{a.hint}</span>
                       </span>
-                      <span className="font-display text-[12px] font-bold tabular-nums opacity-70">
+                      <span
+                        className={`font-display text-[12px] font-bold tabular-nums ${
+                          on ? "text-accent" : "opacity-70"
+                        }`}
+                      >
                         ×{a.factor}
                       </span>
                     </button>
@@ -311,32 +327,35 @@ export default function BodyPage() {
 
             {/* ------------------------------ calories ------------------------------ */}
             <Card title="Daily intake">
-              <div className="rounded-field bg-accent px-4 py-3.5 text-on-accent">
-                <div className="text-[10.5px] font-bold uppercase tracking-[.08em] opacity-75">
-                  Eat per day · {GOALS[body.goal].label.toLowerCase()}
+              {/* The design's intake hero: one solid accent card with the BMR /
+                  TDEE / protein tiles nested inside it. */}
+              <div className="rounded-card bg-accent p-4 text-on-accent">
+                <div className="text-[10.5px] font-label font-bold uppercase tracking-[.1em] opacity-80">
+                  Daily intake · {GOALS[body.goal].label.toLowerCase()}
                 </div>
-                <div className="mt-1 font-display text-[36px] font-bold leading-none tabular-nums">
+                <div className="mt-1.5 font-display text-[40px] font-bold leading-none tabular-nums">
                   {Math.round(m.calories / 10) * 10}
-                  <span className="ml-1.5 text-[13px] font-semibold opacity-75">kcal</span>
+                  <span className="ml-1.5 text-[13px] font-semibold opacity-80">kcal</span>
                 </div>
-              </div>
-
-              <div className="mt-2.5 grid grid-cols-3 gap-2">
-                {[
-                  ["Resting", `${Math.round(m.bmr)}`, "kcal"],
-                  ["Maintenance", `${roundKcal(m.tdee)}`, "kcal"],
-                  ["Protein", `${Math.round(m.proteinG)}`, "g"],
-                ].map(([label, value, unit]) => (
-                  <div key={label} className="rounded-field bg-raised px-2.5 py-2.5 text-center">
-                    <div className="text-[9.5px] font-bold uppercase tracking-[.06em] text-mute">
-                      {label}
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {[
+                    ["BMR", `${Math.round(m.bmr)}`],
+                    ["TDEE", `${roundKcal(m.tdee)}`],
+                    ["PRO", `${Math.round(m.proteinG)}g`],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="rounded-tile bg-on-accent/15 px-2.5 py-2.5 text-center"
+                    >
+                      <div className="text-[9.5px] font-label font-extrabold uppercase tracking-[.08em] opacity-80">
+                        {label}
+                      </div>
+                      <div className="mt-1 font-display text-[17px] font-bold leading-none tabular-nums">
+                        {value}
+                      </div>
                     </div>
-                    <div className="mt-1 font-display text-[17px] font-bold leading-none tabular-nums">
-                      {value}
-                      <span className="ml-0.5 text-[10px] font-semibold text-muted">{unit}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
               <p className="mt-3 text-[11.5px] leading-[1.5] text-muted">
@@ -413,7 +432,7 @@ export default function BodyPage() {
                     pocket the phone, stop when you're back. */}
                 {ped.state === "counting" ? (
                   <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5 text-center">
-                    <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+                    <div className="text-[10.5px] font-label font-extrabold uppercase tracking-[.08em] text-accent-text">
                       Counting steps…
                     </div>
                     <div className="mt-1 font-display text-[38px] font-bold leading-none tabular-nums">
@@ -465,9 +484,19 @@ export default function BodyPage() {
                   {(m.waterMl / 1000).toFixed(1)}
                   <span className="ml-1.5 text-[13px] font-semibold text-dim">L / day</span>
                 </div>
-                <div className="pb-1 text-right text-[11px] text-muted">
-                  ≈ {Math.round(m.waterMl / 250)} glasses
+              </div>
+              {/* The design's glass gauge: one filled square per glass. */}
+              <div className="mt-3 flex items-center gap-2">
+                <div className="flex gap-1">
+                  {Array.from({ length: Math.min(Math.round(m.waterMl / 250), 16) }).map(
+                    (_, i) => (
+                      <span key={i} className="h-4 w-2 rounded-[2px] bg-accent/70" />
+                    )
+                  )}
                 </div>
+                <span className="text-[12px] font-semibold text-dim">
+                  = {Math.round(m.waterMl / 250)} glasses
+                </span>
               </div>
               <p className="mt-3 text-[11.5px] leading-[1.5] text-muted">
                 35 ml per kg, plus what a session costs in sweat. Add more in heat, and drink

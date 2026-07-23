@@ -1,20 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { WORKOUT_PRESETS } from "@/lib/workouts";
 import type { Workout } from "@/types";
 
 /**
- * A single button you slide through your sessions, plus a "+" to add another.
+ * "Available Sessions" — the Stitch refined layout: a horizontally scrollable
+ * row of compact 4:5 tiles, one per session, with a dashed "+" tile at the end.
  *
- * Sliding *browses*; tapping the card adds or removes that session from the
- * day. They are separate gestures on purpose: a day can be Pull and Cardio and
- * Abs at once, so "whatever you stopped scrolling on" would toggle sessions on
- * just by passing them.
- *
- * Built on CSS scroll-snap rather than a drag handler — the browser supplies
- * real touch momentum and snapping, off the main thread, so it stays smooth
- * over the glass cards.
+ * Tapping a tile adds or removes that session from the day (a day can be Pull
+ * and Cardio and Abs at once); scrolling just browses. This replaced the
+ * earlier full-width snap slider when the app was matched to the Stitch
+ * design — the toggle semantics are unchanged, only the presentation.
  */
 export default function WorkoutSlider({
   workouts,
@@ -36,75 +33,6 @@ export default function WorkoutSlider({
   onResetToUsual: () => void;
 }) {
   const [creating, setCreating] = useState(false);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const raf = useRef<number | undefined>(undefined);
-  const settle = useRef<number | undefined>(undefined);
-  const programmatic = useRef(false);
-
-  /*
-   * Which card is under the centre line right now. Styling from committed state
-   * meant the highlight waited on a debounce and then popped; this follows the
-   * finger instead.
-   */
-  const [liveIndex, setLiveIndex] = useState(0);
-
-  const nearestIndex = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return 0;
-    const centre = track.scrollLeft + track.clientWidth / 2;
-    let best = 0;
-    let bestDistance = Infinity;
-    Array.from(track.children).forEach((c, i) => {
-      const el = c as HTMLElement;
-      const d = Math.abs(el.offsetLeft + el.clientWidth / 2 - centre);
-      if (d < bestDistance) {
-        bestDistance = d;
-        best = i;
-      }
-    });
-    return best;
-  }, []);
-
-  const scrollToIndex = useCallback((i: number, smooth: boolean) => {
-    const track = trackRef.current;
-    const child = track?.children[i] as HTMLElement | undefined;
-    if (!track || !child) return;
-    const target = child.offsetLeft - (track.clientWidth - child.clientWidth) / 2;
-    // Already there: re-scrolling would cut off the browser's own snap.
-    if (Math.abs(track.scrollLeft - target) < 2) return;
-    programmatic.current = true;
-    track.scrollTo({ left: target, behavior: smooth ? "smooth" : "auto" });
-    window.clearTimeout(settle.current);
-    settle.current = window.setTimeout(
-      () => {
-        programmatic.current = false;
-      },
-      smooth ? 420 : 60
-    );
-  }, []);
-
-  const onScroll = () => {
-    if (raf.current === undefined) {
-      raf.current = requestAnimationFrame(() => {
-        raf.current = undefined;
-        setLiveIndex(nearestIndex());
-      });
-    }
-  };
-
-  useEffect(
-    () => () => {
-      if (raf.current !== undefined) cancelAnimationFrame(raf.current);
-      window.clearTimeout(settle.current);
-    },
-    []
-  );
-
-  const step = (delta: number) => {
-    const next = Math.min(Math.max(liveIndex + delta, 0), workouts.length - 1);
-    setLiveIndex(next);
-    scrollToIndex(next, true);
-  };
 
   const unusedPresets = WORKOUT_PRESETS.filter(
     (p) => !workouts.some((w) => w.name.toLowerCase() === p.toLowerCase())
@@ -112,11 +40,9 @@ export default function WorkoutSlider({
 
   return (
     <div className="mt-5">
-      <div className="mb-1.5 flex items-center justify-between px-0.5">
-        <span className="text-[11px] font-bold uppercase tracking-[.12em] text-mute">
-          {selectedIds.length > 1
-            ? `Today · ${selectedIds.length} sessions`
-            : "Today's session"}
+      <div className="mb-2.5 flex items-center justify-between px-0.5">
+        <span className="text-[11px] font-label font-extrabold uppercase tracking-[.12em] text-dim">
+          Available sessions
         </span>
         <div className="flex items-center gap-3">
           {selectedIds.length > 0 && (
@@ -135,108 +61,74 @@ export default function WorkoutSlider({
         </div>
       </div>
 
-      <div className="flex items-stretch gap-2">
-        <div
-          ref={trackRef}
-          onScroll={onScroll}
-          role="listbox"
-          aria-multiselectable="true"
-          tabIndex={0}
-          aria-label="Sessions for this day"
-          onKeyDown={(e) => {
-            if (e.key === "ArrowRight") {
-              e.preventDefault();
-              step(1);
-            }
-            if (e.key === "ArrowLeft") {
-              e.preventDefault();
-              step(-1);
-            }
-            if (e.key === "Enter" || e.key === " ") {
-              const w = workouts[liveIndex];
-              if (w) {
-                e.preventDefault();
-                onToggle(w.id);
-              }
-            }
-          }}
-          className="no-scrollbar flex flex-1 snap-x snap-mandatory gap-3 overflow-x-auto rounded-2xl outline-none"
-        >
-          {workouts.length === 0 && (
-            <div className="flex h-[58px] w-full flex-none items-center justify-center rounded-2xl border border-line bg-surface text-[13.5px] font-semibold text-dim">
-              No sessions yet — tap +
-            </div>
-          )}
-
-          {workouts.map((w) => {
-            const on = selectedIds.includes(w.id);
-            return (
-              <button
-                key={w.id}
-                role="option"
-                aria-selected={on}
-                onClick={() => onToggle(w.id)}
-                className={`flex h-[58px] w-full flex-none snap-center flex-col items-center justify-center rounded-2xl border transition-all duration-[320ms] ease-smooth ${
-                  on
-                    ? "border-accent bg-accent text-on-accent shadow-lift-strong"
-                    : "scale-[.97] border-line bg-surface text-dim"
-                }`}
+      <div
+        role="listbox"
+        aria-multiselectable="true"
+        aria-label="Sessions for this day"
+        className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5"
+      >
+        {workouts.map((w) => {
+          const on = selectedIds.includes(w.id);
+          return (
+            <button
+              key={w.id}
+              role="option"
+              aria-selected={on}
+              onClick={() => onToggle(w.id)}
+              className={`press flex aspect-[4/5] w-[124px] flex-none flex-col justify-between rounded-tile border p-3 text-left transition-colors ${
+                on
+                  ? "border-2 border-accent bg-surface3 p-[11px]"
+                  : "border-line bg-surface"
+              }`}
+            >
+              {/* Bolt when the session is on today's docket, dumbbell otherwise. */}
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className={on ? "text-accent" : "text-dim"}
               >
-                <span className="flex max-w-full items-center gap-1.5 truncate px-5 text-[17px] font-black tracking-tight">
-                  {on && <span aria-hidden="true">✓</span>}
+                {on ? (
+                  <path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z" />
+                ) : (
+                  <path d="M6.5 7v10M17.5 7v10M6.5 12h11M4 9.5v5M20 9.5v5" />
+                )}
+              </svg>
+              <div className="min-w-0">
+                <div className="truncate font-display text-[17px] font-extrabold leading-tight">
                   {w.name}
-                </span>
-                <span className="text-[11px] font-semibold opacity-75">
-                  {on ? `${w.items.length} moves · tap to remove` : "tap to add"}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                </div>
+                <div className={`mt-1 text-[11px] font-semibold ${on ? "text-accent" : "text-dim"}`}>
+                  {on ? "Active" : `${w.items.length} ${w.items.length === 1 ? "move" : "moves"}`}
+                </div>
+              </div>
+            </button>
+          );
+        })}
 
+        {/* The design's dashed empty tile is the add affordance. */}
         <button
           onClick={() => setCreating((v) => !v)}
           aria-label={creating ? "Cancel" : "Add a session"}
           aria-expanded={creating}
-          className={`press flex w-[58px] flex-none items-center justify-center rounded-2xl border text-[24px] leading-none transition ${
-            creating ? "border-accent bg-accent text-on-accent" : "border-line bg-surface text-dim"
+          className={`press flex aspect-[4/5] w-[124px] flex-none items-center justify-center rounded-tile border-[1.5px] border-dashed text-[26px] leading-none transition ${
+            creating
+              ? "border-accent text-accent"
+              : "border-line text-mute"
           }`}
         >
           {creating ? "×" : "+"}
         </button>
       </div>
 
-      {/* how many sessions exist, and where you are among them */}
-      {workouts.length > 1 && (
-        <div className="mt-2 flex items-center justify-center gap-1.5">
-          {workouts.length <= 7 ? (
-            workouts.map((w, i) => (
-              <button
-                key={w.id}
-                onClick={() => {
-                  setLiveIndex(i);
-                  scrollToIndex(i, true);
-                }}
-                aria-label={`Go to ${w.name}`}
-                className={`h-1.5 rounded-full transition-all duration-[320ms] ease-smooth ${
-                  i === liveIndex
-                    ? "w-5 bg-accent"
-                    : selectedIds.includes(w.id)
-                      ? "w-1.5 bg-accent/50"
-                      : "w-1.5 bg-line"
-                }`}
-              />
-            ))
-          ) : (
-            <span className="text-[11px] font-semibold tabular-nums text-dim">
-              {liveIndex + 1} / {workouts.length}
-            </span>
-          )}
-        </div>
-      )}
-
       {creating && (
-        <div className="mt-2 rounded-2xl border border-line bg-surface p-3">
+        <div className="mt-2.5 rounded-card border border-line bg-surface p-3">
           <div className="text-[12px] font-semibold text-dim">Add a session</div>
 
           {unusedPresets.length > 0 && (

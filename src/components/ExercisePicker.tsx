@@ -136,7 +136,7 @@ export default function ExercisePicker({
                   <div className="truncate text-[14.5px] font-semibold">{ex.name}</div>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span
-                      className="rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+                      className="rounded-md px-1.5 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.06em]"
                       style={tagStyle(g)}
                     >
                       {g.name}

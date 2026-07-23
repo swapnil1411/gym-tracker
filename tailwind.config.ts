@@ -38,6 +38,7 @@ const config: Config = {
         success2: "rgb(var(--success2) / <alpha-value>)",
         pr: "rgb(var(--pr) / <alpha-value>)",
         pr2: "rgb(var(--pr2) / <alpha-value>)",
+        error: "rgb(var(--error) / <alpha-value>)",
       },
       // Depth is theme-dependent: shadows in light, borders in dark. Both live
       // behind one token so components never branch on theme.
@@ -47,11 +48,14 @@ const config: Config = {
       },
       // Radius by role, not by size. Nesting reads correctly when an inner
       // radius is smaller than the container it sits in.
+      // Radius rides on theme vars: the dark system (High-Performance
+      // Technical) rounds 12/16/28, the light one (Luminous Precision) is
+      // deliberately squarer at 4/8/16. Values live in globals.css.
       borderRadius: {
-        field: "12px", // inputs, small buttons
-        tile: "14px", // thumbnails
-        card: "20px", // list cards
-        sheet: "28px", // bottom sheets
+        field: "var(--r-field)", // small buttons, chips, inputs
+        tile: "var(--r-tile)", // thumbnails, nested tiles
+        card: "var(--r-card)", // list cards
+        sheet: "var(--r-sheet)", // bottom sheets
       },
       transitionTimingFunction: {
         // Material's standard curve: quick to leave, settles gently. The
@@ -61,6 +65,8 @@ const config: Config = {
       fontFamily: {
         display: ["var(--font-display)", "system-ui", "sans-serif"],
         body: ["var(--font-body)", "system-ui", "sans-serif"],
+        // Caps labels / status chips: Hanken in dark, JetBrains Mono in light.
+        label: ["var(--font-label)", "system-ui", "sans-serif"],
       },
       maxWidth: {
         app: "460px",

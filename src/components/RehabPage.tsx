@@ -26,7 +26,7 @@ const LEVEL_COLOR: Record<Level, string> = {
 function LevelTag({ level }: { level: Level }) {
   return (
     <span
-      className="flex-none rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em]"
+      className="flex-none rounded-md px-1.5 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.06em]"
       style={{
         background: `color-mix(in srgb, ${LEVEL_COLOR[level]} calc(var(--tag-alpha) * 100%), transparent)`,
         color: LEVEL_COLOR[level],
@@ -54,16 +54,32 @@ function Row({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-1 rounded-card border border-line bg-surface pr-1.5">
+    <div className="flex items-center gap-1 rounded-card border border-line bg-surface pr-2">
       <button
         onClick={onOpen}
-        className="press flex min-w-0 flex-1 items-center gap-3 py-3 pl-3.5 text-left"
+        className="press flex min-w-0 flex-1 items-center gap-3.5 py-3 pl-3.5 text-left"
       >
+        {/* The design leads with a thumbnail; the library has no photos, so a
+            surface-3 icon tile holds the slot. */}
+        <span className="flex h-11 w-11 flex-none items-center justify-center rounded-tile border border-line bg-surface3 text-dim">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M13 4a1.5 1.5 0 1 0 3 0 1.5 1.5 0 0 0-3 0zM4 20l4.5-2 1.5-5.5L8 9l4-2.5 3 3 3.5.5M10 12l-2 8" />
+          </svg>
+        </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14.5px] font-semibold">{ex.name}</span>
-          <span className="mt-0.5 block truncate text-[11.5px] text-muted">{ex.target}</span>
+          <span className="block truncate text-[15px] font-extrabold">{ex.name}</span>
+          <span className="mt-0.5 block truncate text-[12px] font-medium text-dim">
+            {ex.target}
+          </span>
         </span>
         <LevelTag level={ex.level} />
+        {!action && (
+          <span aria-hidden="true" className="flex-none pl-1 text-mute">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </span>
+        )}
       </button>
       {action}
     </div>
@@ -94,7 +110,7 @@ function Detail({
           {exercise.protocols.map((p) => (
             <span
               key={p}
-              className="rounded-md bg-raised px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[.06em] text-muted"
+              className="rounded-md bg-raised px-1.5 py-0.5 text-[10px] font-label font-bold uppercase tracking-[.06em] text-muted"
             >
               {protocolName(p)}
             </span>
@@ -103,23 +119,23 @@ function Detail({
 
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div className="rounded-field bg-raised px-3 py-2.5">
-            <div className="text-[9.5px] font-bold uppercase tracking-[.06em] text-mute">Dose</div>
+            <div className="text-[9.5px] font-label font-bold uppercase tracking-[.06em] text-mute">Dose</div>
             <div className="mt-1 text-[13px] font-semibold">{exercise.dose}</div>
           </div>
           <div className="rounded-field bg-raised px-3 py-2.5">
-            <div className="text-[9.5px] font-bold uppercase tracking-[.06em] text-mute">
+            <div className="text-[9.5px] font-label font-bold uppercase tracking-[.06em] text-mute">
               Equipment
             </div>
             <div className="mt-1 text-[13px] font-semibold">{exercise.equipment}</div>
           </div>
         </div>
 
-        <h4 className="mt-4 text-[11px] font-bold uppercase tracking-[.1em] text-mute">
+        <h4 className="mt-4 text-[11px] font-label font-bold uppercase tracking-[.1em] text-mute">
           Why it&apos;s here
         </h4>
         <p className="mt-1.5 text-[13.5px] leading-[1.55] text-muted">{exercise.why}</p>
 
-        <h4 className="mt-4 text-[11px] font-bold uppercase tracking-[.1em] text-mute">
+        <h4 className="mt-4 text-[11px] font-label font-bold uppercase tracking-[.1em] text-mute">
           Get it right
         </h4>
         <ul className="mt-1.5 flex flex-col gap-1.5">
@@ -135,7 +151,7 @@ function Detail({
 
         {lists.length > 0 && (
           <>
-            <h4 className="mt-4 text-[11px] font-bold uppercase tracking-[.1em] text-mute">
+            <h4 className="mt-4 text-[11px] font-label font-bold uppercase tracking-[.1em] text-mute">
               Save to list
             </h4>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -223,7 +239,7 @@ function AddSheet({
 
       {!q.trim() && (
         <div className="border-b border-line px-4 pb-3">
-          <div className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[.08em] text-mute">
+          <div className="mb-1.5 text-[10.5px] font-label font-bold uppercase tracking-[.08em] text-mute">
             Add a whole protocol
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -307,24 +323,29 @@ export default function RehabPage() {
   const addingTo = lists.find((l) => l.id === addingToId) ?? null;
 
   return (
-    <div className="flex w-full max-w-app flex-col">
+    <div className="mx-auto flex w-full max-w-app flex-col md:max-w-2xl">
       <header className="px-5 pb-2 pt-4">
-        <div className="text-[11px] font-extrabold uppercase tracking-[.12em] text-accent">
-          Knees Over Toes
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-[28px] font-extrabold tracking-[-.02em]">Rehab</h1>
+          {/* The design's gold system badge — achievement gold names the method,
+              it isn't a PR, but it's the same "special" register. */}
+          <span className="flex-none rounded-md bg-pr2 px-2 py-1 text-[10px] font-label font-extrabold uppercase tracking-[.1em] text-pr">
+            ATG System
+          </span>
         </div>
-        <h1 className="mt-1 font-display text-[28px] font-extrabold tracking-[-.02em]">Rehab</h1>
         <p className="mt-2 text-[13px] leading-[1.5] text-muted">
-          Knee rehab &amp; mobility on the ATG method — full range, ground up, always pain-free.
+          Unlock structural integrity through progressive length and strength. Move without
+          limits — full range, ground up, always pain-free.
         </p>
       </header>
 
       {/* -------------------------------- lists ------------------------------- */}
       <div className="flex flex-col gap-2 px-5 pt-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-[11px] font-bold uppercase tracking-[.1em] text-mute">My lists</h2>
+          <h2 className="font-display text-[17px] font-extrabold tracking-[-.01em]">My Lists</h2>
           <button
             onClick={() => setNaming({ seed: [], name: "" })}
-            className="press text-[12px] font-semibold text-accent-text"
+            className="press text-[13px] font-bold text-accent"
           >
             + New list
           </button>
@@ -350,29 +371,43 @@ export default function RehabPage() {
             </button>
           </div>
         ) : (
-          lists.map((l) => (
-            <button
-              key={l.id}
-              onClick={() => setOpenListId(l.id)}
-              className="press flex items-center gap-3 rounded-card border border-line bg-surface px-3.5 py-3 text-left"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14.5px] font-semibold">{l.name}</span>
-                <span className="mt-0.5 block text-[11.5px] text-muted">
-                  {l.exerciseIds.length} {l.exerciseIds.length === 1 ? "move" : "moves"}
+          /* The design's bento grid — two list tiles per row, an icon tile up
+             top, name and count below. */
+          <div className="grid grid-cols-2 gap-3">
+            {lists.map((l, i) => (
+              <button
+                key={l.id}
+                onClick={() => setOpenListId(l.id)}
+                className="press rounded-card border border-line bg-surface p-4 text-left"
+              >
+                <span
+                  className={`flex h-10 w-10 items-center justify-center rounded-tile ${
+                    i % 2 === 0 ? "bg-accent-ghost text-accent" : "bg-pr2 text-pr"
+                  }`}
+                >
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {i % 2 === 0 ? (
+                      <path d="M6.5 7v10M17.5 7v10M6.5 12h11M4 9.5v5M20 9.5v5" />
+                    ) : (
+                      <path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12L13 2z" />
+                    )}
+                  </svg>
                 </span>
-              </span>
-              <span aria-hidden="true" className="flex-none text-[15px] text-mute">
-                ›
-              </span>
-            </button>
-          ))
+                <span className="mt-3 block truncate text-[15px] font-extrabold">{l.name}</span>
+                <span className="mt-0.5 block text-[12px] font-medium text-dim">
+                  {l.exerciseIds.length} {l.exerciseIds.length === 1 ? "exercise" : "exercises"}
+                </span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
       {/* ------------------------------- browse ------------------------------- */}
       <div className="mt-5 border-t border-line pt-4">
-        <div className="sticky top-0 z-10 bg-bg px-5 pb-3">
+        {/* Blurred, not solid: the spotlight gradient shows through, per the
+            design's "3px backdrop blur on sticky headers". */}
+        <div className="sticky top-0 z-10 bg-bg/80 px-5 pb-3 backdrop-blur-[3px]">
           <div className="flex items-center gap-2.5 rounded-[14px] bg-raised px-4 py-3 focus-within:ring-1 focus-within:ring-accent">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="flex-none text-mute">
               <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth={2} />
@@ -448,6 +483,11 @@ export default function RehabPage() {
             </p>
           )}
 
+          {!searching && (
+            <h2 className="mb-1 mt-2 font-display text-[17px] font-extrabold tracking-[-.01em]">
+              Discover Moves
+            </h2>
+          )}
           {results.map((ex) => (
             <Row key={ex.id} ex={ex} onOpen={() => setDetail(ex)} />
           ))}

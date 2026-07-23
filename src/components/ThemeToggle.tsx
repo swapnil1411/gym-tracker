@@ -10,7 +10,7 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
     <button
       onClick={toggle}
       // 40px box keeps it at a comfortable tap target even though the icon is small
-      className={`flex h-10 w-10 items-center justify-center rounded-field bg-surface text-muted press ${className}`}
+      className={`flex h-10 w-10 items-center justify-center rounded-full border border-line bg-surface3 text-text press ${className}`}
       aria-label={`Switch to ${dark ? "light" : "dark"} theme`}
       title={`Switch to ${dark ? "light" : "dark"} theme`}
     >

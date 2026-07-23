@@ -86,9 +86,12 @@ export default function BottomNav({
   return (
     <nav
       aria-label="Main"
-      className="pb-safe z-10 flex-none border-t border-line bg-bg sm:rounded-b-[42px]"
+      className="pb-safe z-10 flex-none border-t border-line bg-surface"
     >
-      <div className="flex items-stretch px-2 pb-3 pt-2.5">
+      {/* Tabs align to the page measure so they sit under the content, not
+          stretched across the whole width of a desktop window. The active tab
+          gets the design's accent-subtle pill; inactive tabs stay text-dim. */}
+      <div className="mx-auto flex w-full max-w-app items-center justify-around px-2 pb-3 pt-2 md:max-w-2xl">
         {TABS.map((t) => {
           const on = t.id === active;
           return (
@@ -96,14 +99,14 @@ export default function BottomNav({
               key={t.id}
               onClick={() => onChange(t.id)}
               aria-current={on ? "page" : undefined}
-              className="press flex flex-1 flex-col items-center justify-center gap-1.5 rounded-2xl py-1.5"
+              className={`press flex flex-col items-center justify-center gap-1 rounded-2xl px-5 py-2 transition-colors ${
+                on ? "bg-accent-ghost text-accent" : "text-dim"
+              }`}
             >
-              <span className={`flex leading-none transition ${on ? "text-accent" : "text-mute"}`}>
-                {t.icon(on)}
-              </span>
+              <span className="flex leading-none">{t.icon(on)}</span>
               <span
-                className={`text-[10.5px] tracking-[.04em] transition ${
-                  on ? "font-extrabold text-accent" : "font-semibold text-mute"
+                className={`text-[10.5px] tracking-[.04em] ${
+                  on ? "font-extrabold" : "font-semibold"
                 }`}
               >
                 {t.label}

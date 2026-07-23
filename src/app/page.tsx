@@ -34,7 +34,12 @@ export default function Home() {
   if (!user) return <AuthScreen />;
 
   return (
-    <div className="app-chrome relative flex h-dvh w-full max-w-app flex-col overflow-hidden sm:my-6 sm:h-[812px] sm:rounded-[42px]">
+    // Full-bleed shell: fills the viewport at every size. Pages cap their own
+    // content width (max-w-app, widening at md:), so large screens get a
+    // comfortable centered column instead of a fake phone frame.
+    // No opaque background here — the design's "Background Spotlight" radial
+    // gradient on body::before must stay visible behind the content.
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden">
       <TopBar bodyOpen={bodyOpen} onToggleBody={() => setBodyOpen((b) => !b)} />
       <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {bodyOpen ? (

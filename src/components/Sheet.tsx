@@ -69,7 +69,10 @@ export default function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`fixed bottom-0 left-1/2 ${elevated ? "z-50" : "z-30"} flex max-h-[82dvh] w-full max-w-app -translate-x-1/2 animate-sheetUp flex-col rounded-t-sheet pane outline-none`}
+        // Opaque on purpose: the panel must fully cover the dimmed content
+        // behind it. (This used to be a `pane` class that quietly stopped
+        // existing during a token cleanup, which made every sheet transparent.)
+        className={`fixed bottom-0 left-1/2 ${elevated ? "z-50" : "z-30"} flex max-h-[82dvh] w-full max-w-app -translate-x-1/2 animate-sheetUp flex-col rounded-t-sheet border border-line bg-surface outline-none sm:bottom-6 sm:rounded-sheet`}
       >
         <div className="mx-auto mb-1 mt-2.5 h-1 w-9 rounded-sm bg-line" />
 
@@ -85,7 +88,7 @@ export default function Sheet({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="press absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full text-[19px] leading-none text-muted"
+          className="press absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full bg-surface3 text-[17px] leading-none text-text"
         >
           ✕
         </button>

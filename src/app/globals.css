@@ -26,27 +26,45 @@
  */
 :root,
 [data-theme="dark"] {
-  --bg: 17 18 20; /* #111214 */
-  --surface: 24 26 29; /* #181a1d */
-  --surface2: 32 34 38; /* #202226 */
-  --surface3: 44 47 52; /* #2c2f34 */
-  --border: 39 41 46; /* #27292e */
-  --text: 232 238 235; /* #e8eeeb */
-  --dim: 150 162 156; /* #96a29c */
-  --mute: 104 116 110; /* #68746e */
+  /*
+   * "High-Performance Technical" — imported verbatim from the Stitch project
+   * "Simplified Web Interface" (projects/14106083023259180518, DESIGN.md).
+   * Cool-toned neutrals, electric periwinkle primary, green reserved for done
+   * states, gold reserved for PRs.
+   */
+  --bg: 16 19 25; /* background #101319 */
+  --surface: 28 32 41; /* surface #1c2029 */
+  --surface2: 36 41 53; /* surface-2 #242935 */
+  --surface3: 44 49 61; /* surface-3 #2c313d */
+  --border: 47 53 66; /* border #2f3542 */
+  --text: 225 226 235; /* on-surface #e1e2eb */
+  --dim: 162 171 187; /* text-dim #a2abbb */
+  --mute: 107 115 133; /* text-mute #6b7385 */
 
-  --accent: 130 198 174; /* sage #82c6ae */
-  --accent2: 40 62 54;
-  --accent-ghost: 26 40 35;
-  --on-accent: 14 28 23;
+  --accent: 178 197 255; /* primary #b2c5ff */
+  --accent2: 77 82 105; /* primary 30% over surface — pale hairline */
+  --accent-ghost: 39 52 82; /* accent-subtle #273452 */
+  --on-accent: 0 43 115; /* on-primary #002b73 */
 
-  --success: 130 198 174;
-  --success2: 28 46 40;
-  --on-success: 14 28 23;
+  --success: 91 222 157; /* secondary #5bde9d */
+  --success2: 36 55 55; /* secondary 12% over surface */
+  --on-success: 0 56 33; /* on-secondary #003821 */
 
-  /* Personal-record lavender, reserved for PR callouts — never a general accent. */
-  --pr: 201 186 236;
-  --pr2: 41 37 53;
+  /* Achievement gold, reserved for PR callouts — never a general accent. */
+  --pr: 243 190 95; /* tertiary #f3be5f */
+  --pr2: 36 31 17; /* pr-subtle #241f11 */
+
+  --error: 255 180 171; /* error #ffb4ab */
+
+  /* High-Performance Technical: Space Grotesk display, Hanken body, 8-base
+     radius scale with 16px cards. */
+  --font-display: var(--font-space);
+  --font-body: var(--font-hanken);
+  --font-label: var(--font-hanken);
+  --r-field: 12px;
+  --r-tile: 12px;
+  --r-card: 16px;
+  --r-sheet: 28px;
 
   /* Back-compat aliases for components that still use the original role names. */
   --raised: var(--surface2);
@@ -56,7 +74,7 @@
   --done-text: var(--success);
   --on-done: var(--on-success);
   --accent-text: var(--accent);
-  --header-top: 24 26 29;
+  --header-top: 11 14 20; /* surface-container-lowest #0b0e14 */
   --card-done: var(--success2);
   --heat-empty: var(--surface2);
   --tag-alpha: 0.18;
@@ -67,26 +85,49 @@
 }
 
 [data-theme="light"] {
-  --bg: 237 241 241; /* #edf1f1 */
-  --surface: 255 255 255;
-  --surface2: 238 242 242; /* #eef2f2 */
-  --surface3: 226 232 231; /* #e2e8e7 */
-  --border: 224 231 230; /* #e0e7e6 */
-  --text: 24 30 31; /* #181e1f */
-  --dim: 96 108 108; /* #606c6c */
-  --mute: 150 160 160; /* #96a0a0 */
+  /*
+   * "Luminous Precision" — imported verbatim from the Stitch project's light
+   * design system (luminous_precision/DESIGN.md and the *_refined_2 screens).
+   * Technical blue actions, teal for success AND achievements (this system has
+   * no gold), soft grey borders, no pure black anywhere.
+   */
+  --bg: 249 249 252; /* background #f9f9fc */
+  --surface: 255 255 255; /* cards are pure white w/ 1px border */
+  --surface2: 238 238 240; /* surface-container #eeeef0 */
+  --surface3: 226 226 229; /* surface-container-highest #e2e2e5 */
+  --border: 226 232 240; /* card border #e2e8f0 */
+  --text: 26 28 30; /* on-surface #1a1c1e */
+  --dim: 67 70 85; /* on-surface-variant #434655 */
+  --mute: 115 118 134; /* outline #737686 */
 
-  --accent: 26 158 130; /* #1a9e82 */
-  --accent2: 190 228 217; /* #bee4d9 */
-  --accent-ghost: 228 244 238; /* #e4f4ee */
+  --accent: 0 74 198; /* primary #004ac6 */
+  --accent2: 180 197 255; /* primary-fixed-dim #b4c5ff — pale hairline */
+  --accent-ghost: 219 225 255; /* primary-fixed #dbe1ff */
   --on-accent: 255 255 255;
 
-  --success: 26 158 130; /* #1a9e82 */
-  --success2: 222 240 233; /* #def0e9 */
+  /* tertiary #006058, not tertiary-container #007b71: white button text on
+     the container teal measured 3.07:1 — under AA. The darker step is still
+     the design system's own teal and passes at 4.36:1. */
+  --success: 0 96 88; /* tertiary #006058 */
+  --success2: 224 244 241; /* faint teal tint */
   --on-success: 255 255 255;
 
-  --pr: 122 104 214; /* #7a68d6 */
-  --pr2: 236 232 250; /* #ece8fa */
+  /* Achievements are teal here, not gold — the light screens paint the "PR to
+     beat" tile and the PR banner in the tertiary teal. */
+  --pr: 0 96 88; /* tertiary #006058 */
+  --pr2: 220 250 246; /* tertiary-fixed 30% over white */
+
+  --error: 186 26 26; /* error #ba1a1a */
+
+  /* Luminous Precision: Hanken headlines, Geist body, JetBrains Mono labels;
+     "Soft" squares — 4px controls, 8px cards. */
+  --font-display: var(--font-hanken);
+  --font-body: var(--font-geist);
+  --font-label: var(--font-jbmono);
+  --r-field: 4px;
+  --r-tile: 8px;
+  --r-card: 8px;
+  --r-sheet: 16px;
 
   --raised: var(--surface2);
   --line: var(--border);
@@ -121,14 +162,15 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
+  /* Design.md "Background Spotlight": surface-3 at top-center fading to bg. */
   background:
-    radial-gradient(120% 90% at 50% 0%, rgb(var(--surface3)) 0%, rgb(var(--bg)) 60%, rgb(12 13 15) 100%);
+    radial-gradient(120% 90% at 50% 0%, rgb(var(--surface3)) 0%, rgb(var(--bg)) 70%);
   pointer-events: none;
 }
 
 [data-theme="light"] body::before {
   background:
-    radial-gradient(120% 90% at 50% 0%, rgb(255 255 255) 0%, rgb(var(--bg)) 58%, rgb(var(--surface3)) 100%);
+    radial-gradient(120% 90% at 50% 0%, rgb(255 255 255) 0%, rgb(var(--bg)) 70%);
 }
 
 body {
@@ -185,13 +227,6 @@ textarea {
 .glass {
   background: rgb(var(--surface));
   border: 1px solid rgb(var(--border));
-}
-
-.app-chrome {
-  background: rgb(var(--bg));
-  box-shadow:
-    0 40px 90px -20px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgb(var(--border));
 }
 
 /*

@@ -210,7 +210,7 @@ export default function LogActivitySheet({
         {/* ------------------------------- result ---------------------------- */}
         {body.weightKg ? (
           <div className="mt-3 rounded-card border border-accent2 bg-accent-ghost px-4 py-3.5 text-center">
-            <div className="text-[10.5px] font-extrabold uppercase tracking-[.08em] text-accent-text">
+            <div className="text-[10.5px] font-label font-extrabold uppercase tracking-[.08em] text-accent-text">
               Approx. burn
             </div>
             <div className="mt-1 font-display text-[38px] font-bold leading-none tabular-nums">

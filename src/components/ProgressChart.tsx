@@ -97,7 +97,7 @@ export default function ProgressChart({
   return (
     <div className="rounded-card bg-raised p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[11px] font-bold uppercase tracking-[.1em] text-muted">
+        <span className="text-[11px] font-label font-bold uppercase tracking-[.1em] text-muted">
           Working weight
         </span>
         <span className="text-[11px] text-muted">
